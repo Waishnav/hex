@@ -546,7 +546,7 @@ General                                  // settings
 │       ├── On -> Screen & System Audio Recording row: Allow / waiting / Allowed
 │       └── Dictation -> browser_media sequence below
 ├── Application card -> Sound volume: immediate feedback; zero suppresses tones
-├── Application card -> Sounds: Signature (default) / Classic; previews start
+│   └── Sounds -> Sheet: hear each set acted out in a capsule, pick one
 └── Voice Action shortcut -> Voice Action pane; Meetings -> Meetings › Settings
 
 Pause media + Also pause the browser     // browser_media
@@ -1260,8 +1260,7 @@ Linux General > Sound volume              // dictate.feedback.linux; X11 + Wayla
 ├── Default / older settings -> 50%
 ├── Off -> No recording tones
 └── 25% / 50% / 75% / 100% -> Save and apply live; preview the start sound
-Linux General > Sounds                    // dictate.sound-theme
-└── Signature / Classic -> Save and apply live; preview the start sound
+Linux General > Sounds                    // dictate.sound-set; same sets as macOS
 
 Capture                                  // hex app and hex dictate
 ├── Shortcut starts capture -> Queue start sound immediately, before audio arrives
