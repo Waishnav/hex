@@ -413,7 +413,7 @@ impl Compositor<Hud> for HudCompositor {
             drop(clear_pass(f.encoder, f.target));
             return;
         }
-        let (Some(drawn), layout) = (&hud.drawn, hud.layout) else {
+        let (Some(drawn), layout) = (hud.drawn.take(), hud.layout) else {
             drop(clear_pass(f.encoder, f.target));
             return;
         };
@@ -421,7 +421,11 @@ impl Compositor<Hud> for HudCompositor {
             self.gpu = Some(Gpu::new(f.device, f.format));
         }
         let gpu = self.gpu.as_ref().expect("created above");
-        gpu.draw(f.queue, f.encoder, f.target, drawn, layout, target);
+        let pipeline = gpu.write(&drawn, layout, target, |buffer, data| {
+            f.write_buffer(buffer, 0, data)
+        });
+        gpu.draw(f.encoder, f.target, pipeline);
+        f.rt.state.drawn = Some(drawn);
     }
 }
 
@@ -530,32 +534,40 @@ impl Gpu {
         }
     }
 
-    /// Clears `view` and draws `drawn` into it.
-    fn draw(
+    /// Writes `drawn`'s buffers through `write` and returns the pipeline
+    /// that draws it.
+    fn write(
         &self,
-        queue: &wgpu::Queue,
-        encoder: &mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
         drawn: &Drawn,
         layout: Layout,
         target: Target,
-    ) {
-        let pipeline = match drawn {
+        mut write: impl FnMut(&wgpu::Buffer, &[u8]),
+    ) -> &wgpu::RenderPipeline {
+        match drawn {
             Drawn::Capsule(uniforms) => {
                 let uniforms = Uniforms {
                     resolution: [target.size.0 as f32, target.size.1 as f32],
                     ..*uniforms
                 };
-                queue.write_buffer(&self.capsule, 0, bytes(&uniforms));
+                write(&self.capsule, bytes(&uniforms));
                 &self.capsule_pipeline
             }
             Drawn::Dots(frame) => {
                 let uniforms = DotUniforms::new(frame, layout, target);
-                queue.write_buffer(&self.dot_uniforms, 0, bytes(&uniforms));
-                queue.write_buffer(&self.dots, 0, &packed_dots(frame));
+                write(&self.dot_uniforms, bytes(&uniforms));
+                write(&self.dots, &packed_dots(frame));
                 &self.dot_pipeline
             }
-        };
+        }
+    }
+
+    /// Clears `view` and draws with `pipeline` into it.
+    fn draw(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        pipeline: &wgpu::RenderPipeline,
+    ) {
         let mut pass = clear_pass(encoder, view);
         pass.set_pipeline(pipeline);
         pass.set_bind_group(0, &self.bind, &[]);

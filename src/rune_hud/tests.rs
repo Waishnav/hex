@@ -193,7 +193,10 @@ fn rune_hud_frames() {
             }
         }
         let mut encoder = device.create_command_encoder(&Default::default());
-        gpu.draw(&queue, &mut encoder, &view, drawn, layout, target);
+        let pipeline = gpu.write(drawn, layout, target, |buffer, data| {
+            queue.write_buffer(buffer, 0, data)
+        });
+        gpu.draw(&mut encoder, &view, pipeline);
         encoder.copy_texture_to_buffer(
             texture.as_image_copy(),
             wgpu::TexelCopyBufferInfo {

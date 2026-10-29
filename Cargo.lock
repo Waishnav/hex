@@ -4126,7 +4126,7 @@ dependencies = [
 [[package]]
 name = "procwatch"
 version = "0.1.0"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 dependencies = [
  "libc",
 ]
@@ -4594,7 +4594,7 @@ dependencies = [
 [[package]]
 name = "rune"
 version = "0.0.1"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 dependencies = [
  "arboard",
  "blake3",
@@ -4660,7 +4660,7 @@ dependencies = [
 [[package]]
 name = "rune-kit"
 version = "0.0.1"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 dependencies = [
  "rune",
  "rune-motion",
@@ -4670,12 +4670,12 @@ dependencies = [
 [[package]]
 name = "rune-motion"
 version = "0.1.0"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 
 [[package]]
 name = "rune-staging"
 version = "0.0.1"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 dependencies = [
  "wgpu",
 ]
@@ -4683,7 +4683,7 @@ dependencies = [
 [[package]]
 name = "rune-theme-opencode"
 version = "0.0.1"
-source = "git+https://github.com/anomalyco/rune.git?rev=bfb8facae2e4665e5e6d17afe85561884a7fd402#bfb8facae2e4665e5e6d17afe85561884a7fd402"
+source = "git+https://github.com/anomalyco/rune.git?rev=1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d#1ab4db0d29e2cf4a42f5c8e26439b6fef488f59d"
 dependencies = [
  "rune",
  "rune-kit",
