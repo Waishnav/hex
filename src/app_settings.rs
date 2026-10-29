@@ -2436,6 +2436,7 @@ pub fn exists() -> bool {
 mod tests {
     use super::*;
 
+    #[cfg(target_os = "macos")]
     /// The capsule's ask chip and footer hint show the send-to list's own shortcut,
     /// ⌥⇧V unless rebound, and no keys while the list has none.
     #[cfg(hex_capture)]
@@ -2472,6 +2473,7 @@ mod tests {
         *HOTKEYS.get().unwrap().write().unwrap() = RuntimeHotkeys::default();
     }
 
+    #[cfg(target_os = "macos")]
     /// The list's ⌥⇧V never shares a key with another shortcut: Paste Last
     /// left on its own ⌥⇧V default keeps it, and the list gets another.
     #[cfg(hex_capture)]

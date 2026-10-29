@@ -169,12 +169,12 @@ pub(crate) struct InkState {
 }
 
 impl InkState {
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn scene(&self) -> &Scene {
         &self.scene
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn set_scene(&mut self, scene: Scene) {
         self.scene = scene;
     }

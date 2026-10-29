@@ -389,6 +389,7 @@ pub(super) fn pane(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> El {
 mod tests {
     use super::*;
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn captures_default_off_and_refuse_a_shortcut_in_use() {
         let settings = AppSettings::default();
@@ -454,8 +455,10 @@ mod tests {
         }
     }
 
+    #[cfg(target_os = "macos")]
     const ALLOW: &str = "screen-recording-allow";
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn granted_screen_recording_shows_allowed_and_asks_nothing() {
         let mut rt = pane("mac-scrawl");
@@ -468,6 +471,7 @@ mod tests {
         assert!(asked(&rt).is_empty(), "Allowed is not a button");
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn screen_recording_allow_opens_the_permission_guide() {
         let mut rt = pane("mac-scrawl-permission");

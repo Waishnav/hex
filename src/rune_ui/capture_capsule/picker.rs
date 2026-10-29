@@ -431,7 +431,7 @@ impl PickerState {
 
     /// `aim` at rest, shown or (`on` false) closed, as a still or the start
     /// of a clip.
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn still(aim: Aim, on: bool) -> Self {
         let mut state = Self::new();
         state.rest = aim.pointer.unwrap_or(state.rest);
@@ -448,23 +448,23 @@ impl PickerState {
         state
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn set_act(&mut self, act: super::Act) {
         self.act = Some(act);
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn want(&mut self, mode: Option<Mode>) {
         self.want = mode;
     }
 
     /// Whether the scene shows, rather than fading out or gone.
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn showing(&self) -> bool {
         self.scene.on
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "macos"))]
     pub(crate) fn aim(&self) -> Option<&Aim> {
         self.aim.as_ref()
     }

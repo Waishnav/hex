@@ -924,8 +924,8 @@ impl Backend {
 /// [`RELEASE_GRACE`] passes without a new press.
 #[derive(Default)]
 struct X11Keys {
-    held: [bool; 3],
-    releasing: [Option<Instant>; 3],
+    held: [bool; Shortcut::ALL.len()],
+    releasing: [Option<Instant>; Shortcut::ALL.len()],
 }
 
 impl X11Keys {

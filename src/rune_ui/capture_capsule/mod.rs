@@ -24,7 +24,8 @@ pub(crate) mod playground;
 pub(crate) mod surface;
 pub(crate) mod tuning;
 
-#[cfg(test)]
+// Its scenes and goldens are macOS's chips and labels.
+#[cfg(all(test, target_os = "macos"))]
 mod tests;
 
 use std::cell::Cell;
@@ -390,8 +391,8 @@ impl CapsuleState {
 
     /// `pres` at rest with the timer at `clock`, as a still.
     #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "headless stills and motion runs")
+        any(not(test), not(target_os = "macos")),
+        allow(dead_code, reason = "headless stills and motion runs")
     )]
     pub(crate) fn still(pres: Pres, clock: &str, thumb: Option<rune::Image>) -> Self {
         let mut state = Self::new(false);
