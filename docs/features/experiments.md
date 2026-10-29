@@ -72,8 +72,12 @@ The known experiments are compiled into
 - `playground`: Rune's playground in the window (every OS). ⇧⌘D (View ›
   Playground on macOS) or Ctrl+Shift+D swaps the window for every fixture
   scene, grouped by pane (the tour, the model picker, and the shortcut
-  explainer each get their own group), and, in builds with captures, the
-  capture capsule's states as stories with its flow, tuning, and log. Each
+  explainer each get their own group), Meetings › Live notes (a canned
+  call played through a stand-in for live chapters with notes, for working
+  out the capsule and pane; nothing real runs,
+  [live_notes.rs](../../src/rune_ui/live_notes.rs)), and, in builds with
+  captures, the capture capsule's states as stories with its flow, tuning,
+  and log. Each
   story starts from a fresh fixture; the real window keeps running
   underneath. While it is on, the window resizes everywhere (Linux and the
   macOS tour otherwise keep one fixed size), so the stage beside the

@@ -26,6 +26,7 @@ mod hud_lab;
 #[cfg(target_os = "macos")]
 mod hud_stories;
 mod lists;
+mod live_notes;
 #[cfg(target_os = "macos")]
 pub(crate) mod meeting_capsules;
 mod meetings;

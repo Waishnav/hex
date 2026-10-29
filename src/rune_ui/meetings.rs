@@ -494,7 +494,12 @@ fn copy(ui: &mut Ui, tx: &mut Tx, id: String, what: impl Into<String>, text: Str
 
 /// The status tag; `Ready` only in the detail header, so the list stays
 /// quiet for finished meetings.
-fn status_tag(p: Paint, status: Status, stop_pending: bool, show_ready: bool) -> Option<El> {
+pub(super) fn status_tag(
+    p: Paint,
+    status: Status,
+    stop_pending: bool,
+    show_ready: bool,
+) -> Option<El> {
     let (label, tone) = match status {
         Status::Recording if stop_pending => (tr("Transcribing"), Tone::Accent),
         Status::Starting | Status::Recording => (tr("Recording"), Tone::Danger),
@@ -1149,7 +1154,7 @@ fn transcript(p: Paint, meeting: &Meeting, stop_pending: bool) -> El {
 
 /// One conversational turn: the other side on the left, the user on the
 /// right in the accent colour.
-fn turn_bubble(p: Paint, index: usize, turn: &Turn) -> El {
+pub(super) fn turn_bubble(p: Paint, index: usize, turn: &Turn) -> El {
     let c = &p.k.c;
     let mut line = col().key(format!("turn{index}")).gap(4.0);
     if let Some(pause) = turn.pause_before_ms {
