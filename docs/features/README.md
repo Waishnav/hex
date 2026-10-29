@@ -30,8 +30,8 @@ have detailed maps.
 Agents can [read retained transcripts](transcript-cli.md) and
 [control the running app](control-cli.md) with the release CLI.
 [Experiments](experiments.md) turn unfinished features on per person with a flag;
-the [vocabulary](vocabulary.md) is one, and macOS builds with the `capture`
-build option add [Captures](capture.md): Scrawl's capture engine hosted in Hex,
+the [vocabulary](vocabulary.md) is one, and macOS and Linux builds add
+[Captures](capture.md): Scrawl's capture engine hosted in Hex,
 with its shortcut, input, and Settings › Experiments › Scrawl pane.
 The other capabilities stay here until they need their own verification recipe.
 
@@ -121,6 +121,8 @@ Launch Hex, setup incomplete              // setup.tour; full-window, own column
 │   └── Change or delete the model later in Settings      // setup.delete-model
 ├── macOS: opens centred at one fixed size, so tiling managers float it
 ├── Quit part-way -> next launch resumes at the saved step  // setup.resume
+│   └── Permissions are read again at launch: a setup they now finish (macOS's
+│       Quit & Reopen after a grant) is passed; past setup, it waits until they do
 ├── Welcome -> Get started                // setup.welcome-hero
 │   ├── The Hex glyph backlit by a cool corona, drawn live on the GPU
 │   │   (`rune_ui/hero.rs`); core, middle ring, outer ring light in turn,
@@ -137,6 +139,7 @@ Launch Hex, setup incomplete              // setup.tour; full-window, own column
 │   │   ├── The app tile lifts out of the row and flies, blurred, into the guide
 │   │   └── macOS 27 names the list "Device Control and Data Access"; row and guide follow
 │   ├── Rows re-read every 400 ms and flip to a check as macOS grants
+│   │   └── Accessibility flips live (`AXIsProcessTrusted`); its stale preflight never asks for a restart
 │   ├── On in System Settings, unusable until relaunch -> "Turns on when Hex restarts"
 │   │   └── Every permission on -> primary "Restart Hex" -> relaunch at setup  // setup.restart
 │   ├── The first unfinished row carries the screen's one accent
@@ -287,9 +290,13 @@ Unit tests (`onboarding::tests`) cover step order, the download starting on the
 welcome screen and retrying from any step, permissions-only setup with the
 model waiting for practice, the auto-advance beat, live row flips, a refused
 microphone, platforms without permissions or practice, practice hints, resume,
-the relaunch guard and resume marker, grants waiting for a restart
+the relaunch guard and resume marker, resuming past a setup the relaunch
+finished (`resuming_at_setup_after_a_relaunch_passes_grants_that_are_now_real`),
+grants waiting for a restart
 (`a_grant_the_process_cannot_use_yet_waits_for_a_restart`,
-`setup_offers_a_restart_once_every_permission_is_on`), and the saved step
+`setup_offers_a_restart_once_every_permission_is_on`), an Accessibility grant
+advancing setup without one (`an_accessibility_grant_applies_without_a_restart`),
+and the saved step
 (`the_tour_step_is_saved_for_the_next_launch`). Rune tests drive the tour
 (`the_mac_tour_asks_each_permission_then_practices`,
 `a_listener_that_will_not_start_relaunches_once_then_asks_to_reopen`,
@@ -856,6 +863,8 @@ failed; no visual or installed-app startup verification is claimed.
 ```ts
 Hex checks the release service            // maintain.updates
 ├── 10 s after launch, hourly (Dev channel: every 10 min and on window focus), and Check for updates -> anoma.ly/release/hex/desktop/<channel>.json
+│   ├── User-Agent: hex/<build channel>/<version> (hex/dev/0.0.0-dev-171, hex/stable/2.3.1); nothing else about the install
+│   ├── Failed check -> backs off, never past hourly
 │   └── <channel> -> updates.channel (General › Application › Update channel: Stable | Dev,
 │       or `hex settings set updates.channel`), else the channel the build was published on
 │       (HEX_BUILD_CHANNEL; older builds: dev for a dev version, else the receipt's);
@@ -976,14 +985,15 @@ Linux beta                               // not macOS feature parity
 │   └── X11 grab conflict / portal refusal -> Warn without stopping dictation
 ├── Voice Action (opt-in) -> Hold its shortcut or `hex voice-action` -> Instruction
 │   └── Selected text from the primary selection -> OpenCode -> Paste the reply
-├── Recording HUD -> "Recording" pill on the top or bottom edge, "Transcribing"
+├── Recording HUD -> The macOS capsule (or Dot scope with `dot-scope` on) on the
+│   │   top or bottom edge, recording with the voice's level, then transcribing
 │   │   until accepted output finishes; Hidden position -> none   // linux.hud
-│   └── Rune overlay in Hex's process (linux_rune_hud)
+│   └── Rune overlay in Hex's process (rune_hud, rune_hud.wgsl on the GPU)
 │       ├── Wayland -> layer-shell overlay layer, no keyboard, empty input region
 │       ├── X11 -> override-redirect window, empty input shape
 │       ├── No layer-shell -> `hex status` reports the HUD limitation
 │       └── No window loop (no GPU or display, `hex dictate`) -> no HUD
-├── Tray host (StatusNotifierWatcher) -> Tray icon: click opens the window; menu has Show Hex, Quit Hex (linux_tray)
+├── Tray host (StatusNotifierWatcher) -> Tray icon: click opens the window; menu has Show Hex, Quit Hex (linux_tray, rune::Tray)
 │   └── No tray host -> No icon; status and sounds remain available
 ├── Microphone -> System default or a saved device; `--device` overrides
 │   └── System default -> ALSA's default, resolved at each stream open // no live follow
@@ -1060,8 +1070,11 @@ physical keyboard press has not been recorded.
 
 `linux.hud`: [linux_rune_hud.rs](../../src/linux_rune_hud.rs) keeps the
 listener's generation slot (an old listener cannot hide a restarted HUD) and
-accepts reports before the window's app exists. The GTK HUD it replaced is
-deleted. Observed on
+turns its reports into [rune_hud.rs](../../src/rune_hud.rs)'s events;
+reports before the window's app exists are dropped. The shaders render
+offscreen with `cargo test --bin hex rune_hud_frames -- --ignored`
+(2026-10-28 on apollo: capsule and Dot scope frames match the Metal look).
+The GTK HUD it replaced is deleted. The text pill was observed on
 2026-10-22 in a headless sway on apollo (isolated data root, real microphone,
 `hex service`): `hex dictation start` showed the pill at the top edge and it
 was gone after `hex dictation stop` and transcription. The Rune overlay itself
@@ -1280,14 +1293,14 @@ Linux `hex` -> the Linux window on Rune, in the Hex process // dev.rune-ui
     sides, the full tour
 macOS `hex app` -> one menu-bar process, Rune window // dev.rune-ui-macos
 ├── rune::App on the main thread: accessory, windowless unless setup/onboarding/Dock icon open it
-├── Same AppKit loop: status item, updater, Hex/File/Window menu, Dock reopen event, Metal HUD (16 ms timer)
+├── Same AppKit loop: status item, updater, Hex/File/Window menu, Dock reopen event, the HUD pump (16 ms timer; the HUD itself is a Rune overlay)
 ├── Runtime thread: model preparation (menu bar: installed only), starts the listener once setup is ready
 ├── Listener, meeting controller, local API: their own threads
 ├── macos_host: AppKit event monitor records chords (Option, Fn); NativeHost does permissions,
 │   login item, Hex Microphone, meeting start/stop/rename/trash/reveal, commands workspace, relaunch
 ├── Meetings pane lists the store through meeting::query (1 s rescan, sent only when changed);
-│   a controller failure shows in the pane; NSOpenPanel (file_dialog) chooses the meetings
-│   folder and Modes' "Choose a file…" .app, modeless on the main thread
+│   a controller failure shows in the pane; rune::FileDialogs (file_dialog) chooses the
+│   meetings folder and Modes' "Choose a file…" .app
 ├── Tour: practice dictations from the listener's event log; a listener that failed to start
 ├── Sidebar and pane header move the window (Rune El::window_drag; the title bar is transparent)
 ├── While the window shows, its poll re-checks timed state every 250 ms (Rune Tx::wake_after); close hides it (Dock policy restored)
@@ -1302,7 +1315,7 @@ Windows `hex app` -> one tray process, Rune window // dev.rune-ui-windows
 ├── rune::App: --hidden starts windowless, close hides (keep_running); Quit or no tray ends it
 ├── General adds Launch at login; no terminal paste; chord capture polls
 ├── HUD: shared indicator model + CPU shader in a Rune overlay
-├── Modes: "Choose a file…" opens IFileOpenDialog (file_dialog) on its own STA thread, no owner window
+├── Modes: "Choose a file…" opens rune::FileDialogs (file_dialog) on its own thread
 ├── Modes app icons: the executable's first icon (PrivateExtractIconsW)
 └── Not yet: custom caption
 iOS prototype -> Record/transcribe/copy and keyboard handoff

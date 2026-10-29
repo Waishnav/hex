@@ -918,10 +918,13 @@ fullscreen app on a notched Mac is not yet observed.
 
 ### Dot scope (experiment `dot-scope`)
 
-With the `dot-scope` experiment on, the macOS HUD draws Dot scope instead of
+With the `dot-scope` experiment on, the HUD draws Dot scope instead of
 the capsule ([dot_scope.rs](../../src/dot_scope.rs),
-`dot_scope_fragment` in [dictation_indicator.metal](../../src/dictation_indicator.metal)).
-It is the t422 prototype's look A with its values.
+`dot_scope_fragment` in [rune_hud.wgsl](../../src/rune_hud.wgsl), drawn by
+a Rune overlay on every OS). It is the t422 prototype's look A with its
+values. Linux and Windows draw it in a 176×80 pt window at the HUD's edge
+(no menu-bar or notch placement). Every OS takes dark or light and Reduce
+Motion from Rune, and loads `dot-scope.json` at launch.
 
 ```ts
 Dot scope                                    // dot_scope
@@ -997,8 +1000,8 @@ HUD stories                                  // R plays, P next look, A auto lev
 └── Links name the story's slug and variant: hud-notch, pulse-cancel
 ```
 
-The HUD is a Metal panel, not a Rune view, so a story drives the real HUD at
-the top of the screen and its stage only says what it shows. Playing a story
+The HUD is its own Rune overlay, not a view in the window, so a story drives
+the real HUD at the top of the screen and its stage only says what it shows. Playing a story
 puts its placement and look into the one tuning it shares with HUD Lab
 (`dot_scope::lab`).
 
@@ -1008,9 +1011,12 @@ every component.
 Check: `scripts/check dot_scope` (defaults, knobs, frame-rate independence,
 Reduce Motion, the stages, auto level, each processing look settling dark),
 `scripts/check hud_placement` (each placement on flat and notched screens),
-and `dot_scope_view::tests::dot_scope_frames` (ignored; renders the real
-shader offscreen from a WAV into PNG frames, with `HEX_DOT_SCOPE_TUNING`
-for the look and placement over a pretend 14-inch MacBook Pro's menu bar).
+and `rune_hud::tests::rune_hud_frames` (ignored; renders a fixed
+dictation through the real shaders offscreen into PNG frames, with
+`HEX_HUD_TUNING` for the look and placement over a pretend 14-inch MacBook
+Pro's menu bar). On 2026-10-28 its capsule, Dot scope, and notch frames
+matched the retired Metal HUD's render of the same inputs on hailmary to
+within 3/255 per channel.
 Not yet observed on a real notched display, over a fullscreen app, or with
 a hidden menu bar.
 

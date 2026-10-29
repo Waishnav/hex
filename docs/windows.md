@@ -181,7 +181,7 @@ hex app
 ├── named event already held -> signal it (the running app shows its window) -> exit
 └── becomes the app                                   // windows_rune::open
     ├── runtime thread: WindowsDesktopHost (listener, model preparation, OpenCode, transformations, updater), publishes every 250 ms
-    ├── main thread: rune::App's winit loop, the window, the tray (rides winit's message pump)
+    ├── main thread: rune::App's winit loop and the window; rune::Tray runs on its own thread
     ├── --hidden -> windowless start; close -> hide (keep_running)
     ├── tray Show or a relaunch -> AppHandle::open (shows and focuses)
     └── tray Quit / Ctrl-C / restart into an update -> AppHandle::quit -> runtime stops the listener
@@ -198,13 +198,13 @@ hex app
 - Models are prepared in-process through `transcription_preparation`; the
   runtime saves the selection when it is ready and restarts the listener.
 - Enable on launch waits until first-run setup has recorded completion.
-- The dictation HUD is a Rune overlay (`windows_rune_hud.rs`): a HUD thread
-  steps the shared indicator model and shades each frame with the CPU port of
-  the macOS shader into `rune::Pixels`; Rune shows it in a topmost tool window
+- The dictation HUD is a Rune overlay (`rune_hud.rs`, shared with Linux): a
+  HUD thread steps the shared indicator model (and Dot scope with its
+  experiment on) and the overlay's compositor draws each frame on the GPU with
+  `rune_hud.wgsl`, the WGSL port of the macOS shaders; Rune shows it in a topmost tool window
   with `WS_EX_NOACTIVATE|WS_EX_TRANSPARENT|WS_EX_LAYERED`, shown with
   `SW_SHOWNOACTIVATE`, 12 pt from the top or 24 pt above the taskbar. The
-  same model, shader, and overlay path ran in a headless sway on apollo (a
-  test binary including the two shared modules); on Windows it is only
+  same model, shaders, and overlay run on Linux; on Windows it is only
   type-checked.
 - The window gets the executable's icon from Rune's `App::on_window` hook
   (its HWND through `WindowHandle::with_raw_handle`) for the taskbar,
@@ -267,7 +267,7 @@ current-user startup registry, UI Automation, and Windows capture APIs.
 | Recording tones and click-through recording/processing HUD | Implemented; a CPU port of the macOS Metal shader drawn in a Rune overlay, never run on Windows |
 | History retention, list, detail, search, copy, delete, and clear | Implemented |
 | Text replacements | Implemented in the Windows Modes pane using the shared phrase-boundary replacement engine |
-| Application picker in Modes | Implemented; lists Start menu shortcuts, App Paths, and apps with an open window, with each executable's icon; "Choose a file…" opens `IFileOpenDialog` |
+| Application picker in Modes | Implemented; lists Start menu shortcuts, App Paths, and apps with an open window, with each executable's icon; "Choose a file…" opens the native dialog through `rune::FileDialogs` |
 | Interface language | Implemented on every OS; English, Polish, Chinese, Japanese, German, and Spanish |
 | Resident tray and Launch at login | Implemented |
 | Application modes with per-mode corrections, OpenCode rewriting, and transformations | Implemented on the shared ordered processing policy; global and contextual profiles persist their own corrections, model, reasoning variant, deadline, and ordered built-in/TypeScript transformations, while modes match by application name — physical end-to-end paste/UI validation remains |

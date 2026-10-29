@@ -138,6 +138,9 @@ pub(crate) fn run_app(
         .windowless()
         .window_options(fixed_window());
     crate::linux_rune_hud::install(&mut app);
+    // The capture capsule, picker, and ink, with the `capture` experiment on.
+    let _capture_overlays = crate::app_settings::capture_available()
+        .then(|| crate::rune_ui::capture_capsule::feed::CaptureOverlays::install(&mut app));
     let handle = app.handle();
     host.set_window_visible({
         let handle = handle.clone();
@@ -586,6 +589,8 @@ enum Menu {
     MeetingActions,
     /// The calendars meeting reminders read.
     Calendars,
+    /// The transformations a mode can add (the Modes pane).
+    Transformations,
     /// How long captures are kept (the Scrawl pane).
     #[cfg(hex_capture)]
     CaptureRetention,
@@ -1777,8 +1782,13 @@ const SCENES: &[Scene] = &[
     ("modes-picker", |ui| {
         *ui = portal_fixture();
         modes::fixture(ui);
-        ui.modes.transformation_picker_open = true;
         ui.modes.application_picker_open = true;
+        ui.pane = Pane::Modes;
+    }),
+    ("modes-transformation-menu", |ui| {
+        *ui = portal_fixture();
+        modes::fixture(ui);
+        ui.open = Some(Menu::Transformations);
         ui.pane = Pane::Modes;
     }),
     ("picker", |ui| {

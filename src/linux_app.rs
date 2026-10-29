@@ -44,6 +44,9 @@ pub(crate) enum ShortcutTarget {
     Dictation,
     PasteLast,
     VoiceAction,
+    Capture,
+    /// The capsule's send-to list (`capture.list_hotkey`).
+    CaptureList,
 }
 
 struct PreparedTranscription {
@@ -337,9 +340,7 @@ pub(crate) fn run(
     run_window(&host, requests, first, shutdown);
     shutdown.store(true, Ordering::Release);
     let _ = worker.join();
-    if let Some(tray) = tray {
-        let _ = tray.join();
-    }
+    drop(tray);
     Ok(())
 }
 
@@ -819,6 +820,8 @@ impl LinuxDesktopHost {
                         ShortcutTarget::Dictation => settings.dictation_hotkey = binding,
                         ShortcutTarget::PasteLast => settings.paste_last_hotkey = Some(binding),
                         ShortcutTarget::VoiceAction => settings.edit_hotkey = binding,
+                        ShortcutTarget::Capture => settings.capture.hotkey = binding,
+                        ShortcutTarget::CaptureList => settings.capture.list_hotkey = binding,
                     }
                 })
             }));

@@ -44,10 +44,11 @@ use crate::desktop_host::{
     DesktopAction, DesktopListenerSnapshot, DesktopShortcut, DesktopShortcuts,
     DesktopTranscriptionSnapshot, DesktopUpdateStatus,
 };
-use crate::dictation_indicator::{DictationIndicatorEvent, DictationIndicatorUi};
+use crate::dictation_indicator::DictationIndicatorEvent;
 use crate::meeting::MeetingRequest;
 use crate::meeting_watcher::{ControllerEvent, ListenerConfig, MeetingMenuState};
 use crate::recognition::RecognitionControl;
+use crate::rune_hud::DictationIndicatorUi;
 use crate::rune_ui::{Destination, Ui};
 use crate::status_item::StatusItemAction;
 use crate::transcription_models::{
@@ -255,11 +256,23 @@ fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }
 
+/// Samples footprint and CPU for the life of the app (every 10 s in release, 2 s in debug
+/// builds) and logs a warning on a large footprint, steady growth, or a busy core.
+fn watch_process() {
+    let config = if cfg!(debug_assertions) {
+        procwatch::Config::dev("hex")
+    } else {
+        procwatch::Config::release("hex")
+    };
+    procwatch::watch_with(config, |event, _| tracing::warn!(%event, "process watch"));
+}
+
 pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig) -> Result<()> {
     let Some(mtm) = MainThreadMarker::new() else {
         return Err(eyre!("desktop startup requires the main thread"));
     };
     shutdown.store(false, Ordering::Relaxed);
+    watch_process();
     crate::keyboard::initialize_layout()?;
     crate::updater::finish_on_launch();
     let _ = UPDATER.set(crate::updater::Updater::start());
@@ -426,6 +439,7 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig) -> Result<()
             },
         )
     };
+    let hud = crate::rune_hud::install(&mut app);
     // The capture capsule, picker, and ink, with the `capture` experiment on.
     #[cfg(hex_capture)]
     let capture_overlays = crate::app_settings::capture_available()
@@ -438,6 +452,7 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig) -> Result<()
         runtime: handle,
         shutdown,
         indicator_events,
+        hud,
         status_actions: None,
         controller_events,
         developer_calls: developer_receiver,
@@ -755,6 +770,7 @@ struct Pump {
     runtime: RuntimeHandle,
     shutdown: &'static AtomicBool,
     indicator_events: Receiver<DictationIndicatorEvent>,
+    hud: crate::rune_hud::HudSender,
     status_actions: Option<Receiver<StatusItemAction>>,
     controller_events: Receiver<ControllerEvent>,
     developer_calls: Receiver<crate::developer_control::DeveloperCall>,
@@ -838,7 +854,7 @@ fn start_main_thread() {
                 pump.status_actions.is_some(),
             ),
     );
-    let indicator = DictationIndicatorUi::new();
+    let indicator = DictationIndicatorUi::new(pump.hud.clone());
     install_main_menu(&target, mtm);
     // Inside the loop, once AppKit has started, so its own Apple event setup
     // can't replace this handler.
