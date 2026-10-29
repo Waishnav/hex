@@ -2276,6 +2276,7 @@ pub fn listen_for_controls() -> Receiver<CaptureControl> {
 impl ShortcutActivity {
     /// What a press of a shortcut the desktop reports only as pressed (the
     /// Linux portal and keybindings) asks for: it records at once.
+    #[cfg(target_os = "linux")]
     pub fn on_press(self) -> ShortcutAction {
         match self {
             Self::Free => ShortcutAction::Record,
@@ -4001,9 +4002,7 @@ mod tests {
         // exists and the listener answers `feature-off`.
         assert!(!crate::app_settings::CaptureSettings::default().enabled);
         if !crate::app_settings::capture_on() {
-            assert!(
-                CaptureHost::start(None, &RecordingEnvironmentController::for_test()).is_none()
-            );
+            assert!(CaptureHost::start(None, &Environment::for_test()).is_none());
         }
     }
 

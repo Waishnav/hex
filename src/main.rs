@@ -1076,18 +1076,18 @@ mod tests {
         {
             assert!(matches!(
                 parse(&["hex", "capture", "stop", "--json"]),
-                Ok(Some(Command::Capture { command: control::cli::CaptureCommand::Stop { output } })) if output.json
+                Ok(Some(Command::Capture { command: crate::control::cli::CaptureCommand::Stop { output } })) if output.json
             ));
             assert!(matches!(
                 parse(&["hex", "capture", "send", "latest", "--to", "ses_1"]),
                 Ok(Some(Command::Capture {
-                    command: control::cli::CaptureCommand::Send { capture, to: Some(to), .. }
+                    command: crate::control::cli::CaptureCommand::Send { capture, to: Some(to), .. }
                 })) if capture == "latest" && to == "ses_1"
             ));
             assert!(matches!(
                 parse(&["hex", "capture", "send", "latest", "--always"]),
                 Ok(Some(Command::Capture {
-                    command: control::cli::CaptureCommand::Send {
+                    command: crate::control::cli::CaptureCommand::Send {
                         to: None,
                         always: true,
                         ..
