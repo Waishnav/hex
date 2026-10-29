@@ -32,7 +32,7 @@ Agents can [read retained transcripts](transcript-cli.md) and
 [Experiments](experiments.md) turn unfinished features on per person with a flag;
 the [vocabulary](vocabulary.md) is one, and macOS and Linux builds add
 [Captures](capture.md): Scrawl's capture engine hosted in Hex,
-with its shortcut, input, and Settings › Experiments › Scrawl pane.
+with its shortcut, input, and Settings › Labs › Scrawl pane.
 The other capabilities stay here until they need their own verification recipe.
 
 ## Get Ready
@@ -121,8 +121,6 @@ Launch Hex, setup incomplete              // setup.tour; full-window, own column
 │   └── Change or delete the model later in Settings      // setup.delete-model
 ├── macOS: opens centred at one fixed size, so tiling managers float it
 ├── Quit part-way -> next launch resumes at the saved step  // setup.resume
-│   └── Permissions are read again at launch: a setup they now finish (macOS's
-│       Quit & Reopen after a grant) is passed; past setup, it waits until they do
 ├── Welcome -> Get started                // setup.welcome-hero
 │   ├── The Hex glyph backlit by a cool corona, drawn live on the GPU
 │   │   (`rune_ui/hero.rs`); core, middle ring, outer ring light in turn,
@@ -210,9 +208,8 @@ Language row is unexercised.
 ```ts
 Choose a supported language              // setup.language-conditioning; macOS + Linux picker
 ├── Parakeet v3 -> Detect language from audio; selected language does not constrain output
-├── Whisper -> Use selected language to guide decoding; accuracy is not guaranteed
-│   └── Recognition hints -> initial prompt; output that only repeats them is dropped
-└── Bangla -> Whisper only, with the `bn` hint; Auto lets Whisper guess per clip
+└── Whisper -> Use selected language to guide decoding; accuracy is not guaranteed
+    └── Recognition hints -> initial prompt; output that only repeats them is dropped
 ```
 
 Whisper reads the recognition hints as its initial prompt and, on silence or
@@ -271,14 +268,6 @@ metadata inspection establish the prompting limitation, not the cause or repair
 of those transcripts. No v3 audio reproduction or transcription-quality fix has
 been demonstrated.
 
-Bangla (`bn`) is offered because Whisper large-v3-turbo was trained on it; no
-other catalog model supports it, so Whisper is its only, recommended choice and a
-Mac whose first preferred language is Bangla starts on Whisper. Auto is not a
-substitute: in a manual test, Whisper's per-clip detection labeled Bangla speech
-as Arabic, Turkish, and Spanish. `bangla_is_transcribed_by_whisper_with_its_language_hint`
-checks the recommendation, the `bn` hint, and that Qwen3-ASR rejects it. It
-runs no inference, and Bangla accuracy has not been measured.
-
 Checks start in [onboarding.rs](../../src/onboarding.rs),
 [transcription.rs](../../src/transcription.rs), and
 [transcription_models.rs](../../src/transcription_models.rs). Setup/picker previews
@@ -299,9 +288,7 @@ Unit tests (`onboarding::tests`) cover step order, the download starting on the
 welcome screen and retrying from any step, permissions-only setup with the
 model waiting for practice, the auto-advance beat, live row flips, a refused
 microphone, platforms without permissions or practice, practice hints, resume,
-the relaunch guard and resume marker, resuming past a setup the relaunch
-finished (`resuming_at_setup_after_a_relaunch_passes_grants_that_are_now_real`),
-grants waiting for a restart
+the relaunch guard and resume marker, grants waiting for a restart
 (`a_grant_the_process_cannot_use_yet_waits_for_a_restart`,
 `setup_offers_a_restart_once_every_permission_is_on`), an Accessibility grant
 advancing setup without one (`an_accessibility_grant_applies_without_a_restart`),
@@ -472,9 +459,9 @@ Completed output                         // output
 │   └── Last completed dictation, not Voice Action
 └── History
     ├── Inspect / search / copy / delete
-    ├── Retention -> Seven days by default, always hard-capped
+    ├── Advanced ▸ (header) -> Keep for: seven days by default, always hard-capped
+    │   └── Clear history -> two-step explicit deletion
     ├── Off -> Stop new entries; preserve existing entries
-    └── Clear all -> Explicit deletion
 ```
 
 Checks in [paste.rs](../../src/paste.rs), [parakeet.rs](../../src/parakeet.rs), and
@@ -509,61 +496,48 @@ latency measurement.
 ## Adjust Behavior
 
 ```ts
+Sidebar                                  // settings.nav
+├── General, History, then each opt-in feature that is on (Voice Action, Commands, Meetings)
+└── Labs ▸ -> Labs page: a switch per opt-in feature; one turned on joins the sidebar
+    └── Experiments' panes (and Modes when shown) indent under Labs while it's open
+        // Command-1…9 follow this order (labs::order)
+
 General                                  // settings
-├── Dictation card -> Shortcut, Shortcut mode, Double-tap to lock, Speech model, Language
-│   ├── Shortcut mode > How it works -> Hold/Toggle explainer modal (dictation.md)
-│   └── A row that hides or shows (Double-tap to lock, Advanced, a microphone error)
+├── Basics card -> Shortcut, Speech model, Language, Microphone, Launch at login
+│   ├── Each row leads with an icon; choices are inline dropdowns, not segments
+│   ├── Language -> fixed text for a one-language model, else a dropdown
+│   └── A row that hides or shows (Advanced, a microphone error, Double-tap only)
 │       -> Folds under a clip as the rows below slide over it; no fade in place
-├── Microphone -> Field always names the input in use            // settings.microphone
-│   ├── "System default" + faint "KIT PODS", or a saved device
+├── Microphone -> Value names the input in use, with live level bars // settings.microphone
+│   ├── "System default · Kit Pods", or a saved device
 │   ├── Re-listed on a device or default change while General shows (Windows: also every 3 s)
 │   ├── System default -> The OS default input, followed live      // a Bluetooth default is kept
 │   │   ├── Default changes -> Switch once capture is idle; new stream opens before the old drops
 │   │   └── Default is Hex Microphone -> Built-in mic, else first real input; row says so
-│   ├── Saved device missing -> System default stands in, field names it
+│   ├── Saved device missing -> System default stands in, value names it
 │   │   ├── Row says "SHURE MV7 isn't connected; using your Mac's input"
 │   │   ├── Menu keeps "SHURE MV7" checked with a faint "not connected"
 │   │   └── Device returns -> Switch back once idle; the setting never changes
 │   ├── Menu lists real inputs only                                // never Hex Microphone
 │   └── Open menu covers the controls beneath it; click elsewhere dismisses
-├── Advanced ▸ (Dictation header) -> rows at the end of the Dictation card
-│   ├── Open while Release when idle, Double-tap only (Hold), or sharing is on
-│   └── Collapse -> drops a pending release confirmation
-├── Share dictation shortcut with other apps (Advanced, Windows, off)
-│   └── On -> the hook passes the shortcut's key-down/up on instead of consuming it
+├── Advanced ▸ -> one fold per pane, closed by default, even while a setting in it is in use
+│   ├── Collapse -> drops a pending release confirmation
+│   ├── Dictation -> Shortcut side, Shortcut mode (How it works), Double-tap to lock,
+│   │   Double-tap only, Microphone mode, keyboard-language model switching (macOS),
+│   │   Recognition hints (models that take them)
+│   ├── Output -> Paste last shortcut, While dictating, Dictation HUD, Terminal paste (Linux)
+│   └── Application -> Enable on launch, Show Dock icon, Sound volume, Sounds,
+│       Interface language, Update channel (self-updating installs)
 ├── Microphone mode (Advanced)
 │   ├── Keep ready (fast) -> Open while idle; pre-roll available
 │   └── Release when idle -> Open on press; no pre-roll; startup delay
 │       └── Commands enabled? -> Confirm turning Commands off
-├── Output card -> Paste last shortcut, While dictating, Dictation HUD
 ├── While dictating -> Mute / Pause media / Do nothing
 │   ├── Intentional capture only, not ordinary shortcut chords
-│   ├── Pause/resume only players already reported running by macOS
-│   ├── Linux restore -> Waits 300 ms; a new capture keeps it suppressed // double-tap lock
-│   └── Also pause the browser (macOS, Pause media only; off by default)
-│       ├── Turning it on without System Audio Recording -> ask now, never while dictating
-│       ├── On -> Screen & System Audio Recording row: Allow / waiting / Allowed
-│       └── Dictation -> browser_media sequence below
-├── Application card -> Sound volume: immediate feedback; zero suppresses tones
-├── Application card -> Sounds: Signature (default) / Classic; previews start
-└── Voice Action shortcut -> Voice Action pane; Meetings -> Meetings › Settings
-
-Pause media + Also pause the browser     // browser_media
-├── A browser uses the microphone (a call) -> leave it alone
-├── No browser process has its audio output open -> leave it alone (no tap)
-├── Listen to those processes' own output (private process tap), 3 windows of 100 ms
-│   └── Any window at or below -60 dBFS, or no level -> leave it alone
-├── Send the system pause command (MediaRemote 1; never the toggle)
-├── Poll 5 windows of 100 ms
-│   ├── 2 windows in a row below -90 dBFS -> Hex paused it
-│   └── Otherwise (another tab, a sound that ended later, or the pause went elsewhere) -> no play later
-└── Dictation ends and Hex paused it -> first, before the players: listen 300 ms to every browser process
-    ├── Above -60 dBFS (you started it again) -> no play
-    ├── No level (browser quit, tap failed) -> no play
-    └── Otherwise -> send the system play command (MediaRemote 0), then poll 20 windows of 100 ms
-        ├── A window above -60 dBFS -> resumed
-        ├── No level -> stop listening
-        └── Silent throughout (tab closed or reloaded: the play reached another app) -> send pause once
+│   └── Pause/resume only players already reported running by macOS
+├── Sound volume -> immediate feedback; zero suppresses tones
+├── Sounds -> Signature (default) / Classic; previews start
+└── Linux / Windows -> listener card and desktop commands below the basics
 
 Intentional recording                    // recording.environment
 ├── Acquire native macOS no-idle-sleep assertion
@@ -589,20 +563,7 @@ not a managed-device policy or native power assertion. The pause-script regressi
 checks that inactive players are absent before AppleScript application resolution;
 when no supported player is running, acquisition skips AppleScript entirely.
 The script check does not prove subprocess avoidance or exercise Music, Spotify,
-or VLC through Automation.
-The browser pause runs after the AppleScript players and only when System Audio
-Recording is reported granted (an unknown answer skips it, because the tap would
-open the macOS dialog mid-dictation). macOS 15.4 and later no longer tell other apps
-what is playing, so Hex hears the browsers through a private process tap
-(aggregate `anomaly.hex.browser-tap.<pid>`, apart from the meeting tap) and sends
-play only after it saw the browser go silent right after its own pause. The
-sequence checks in [browser_media.rs](../../src/browser_media.rs) run on fakes:
-`a_confirmed_pause_is_resumed`, `two_sounding_tabs_never_get_play`,
-`a_browser_already_playing_gets_no_play`, `a_call_is_never_paused`,
-`no_level_sends_nothing`, `a_play_the_browser_never_takes_is_paused_again`; the ignored `native_tap_hears_a_playing_browser`
-heard Brave at -25.4 dBFS on macOS 27.0.1 (2026-10-28). Which app receives the
-system command is macOS's Now Playing choice; Safari is heard only when its
-WebKit process reports Safari's name. An opt-in native
+or VLC through Automation. An opt-in native
 assertion smoke exercises IOKit without starting microphone capture.
 
 **Changed after 2.3.1:** Automatic was a compiled preference list (Universal
@@ -748,7 +709,7 @@ suppression, and the Markdown copy in the user's transcript folder.
 ```ts
 voice-filter experiment, HEX_EXPERIMENTAL_MIC=1, experimental.hex_microphone = true,
 or the driver installed                  // fun.hex-microphone; macOS
-├── Sidebar > Experiments > Voice Filter  // the only home of these controls
+├── Sidebar > Labs > Voice Filter  // the only home of these controls
 ├── Hex Microphone card
 │   ├── Driver status -> Installed v<ver> / In use by <app> + Uninstall
 │   │   ├── Version mismatch -> v<old> installed + Update + Uninstall

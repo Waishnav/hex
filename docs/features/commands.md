@@ -10,11 +10,11 @@ previews, providers, or native actions were run for this split.
 ## How To Get To It
 
 ```ts
-Hex > Commands                                      // commands; off by default
+Labs > Commands switch, or Hex > Commands once on  // commands; off by default
 ├── Top card "Voice commands" switch -> Prepare command model // needs setup permissions
 ├── Model failed -> card below it: Retry / Turn off commands  // only in this pane
 ├── Search / select a catalog row -> Inspect, not execute
-└── Create config / Edit config / Copy agent prompt  // personal workspace
+└── Advanced ▸ (header) -> hex.config.ts Create/Edit, Copy agent prompt // personal workspace
 
 hex commands init -> Create or refresh ~/.config/hex // does not start listening
 hex listen -> Use saved command opt-in               // never beside another listener

@@ -17,7 +17,6 @@ use objc2_core_audio::{
 use objc2_core_foundation::CFString;
 
 use crate::app_settings::{self, RecordingAudioBehavior};
-use crate::browser_media::{self, NativeBrowserAudio, PausedBrowser};
 
 const VIRTUAL_MAIN_VOLUME: u32 = u32::from_be_bytes(*b"vmvc");
 const POWER_ASSERTION_LEVEL_ON: u32 = 255;
@@ -405,36 +404,9 @@ unsafe extern "C" {
 }
 
 enum AudioBehaviorGuard {
-    Muted {
-        device: u32,
-        previous: f32,
-    },
-    Paused {
-        players: Vec<MediaPlayer>,
-        browser: Option<PausedBrowser>,
-    },
+    Muted { device: u32, previous: f32 },
+    Paused { players: Vec<MediaPlayer> },
     None,
-}
-
-/// Only with the permission already granted: a tap without it opens the
-/// macOS dialog, and a dialog must never open while you dictate.
-fn browser_pause_allowed(
-    enabled: bool,
-    authorization: crate::meeting::SystemAudioAuthorization,
-) -> bool {
-    enabled
-        && matches!(
-            authorization,
-            crate::meeting::SystemAudioAuthorization::Granted
-        )
-}
-
-fn paused_guard(players: Vec<MediaPlayer>, browser: Option<PausedBrowser>) -> AudioBehaviorGuard {
-    if players.is_empty() && browser.is_none() {
-        AudioBehaviorGuard::None
-    } else {
-        AudioBehaviorGuard::Paused { players, browser }
-    }
 }
 
 impl AudioBehaviorGuard {
@@ -448,19 +420,12 @@ impl AudioBehaviorGuard {
             }
             RecordingAudioBehavior::PauseMedia => {
                 let players = pause_media();
-                if !players.is_empty() {
+                if players.is_empty() {
+                    Self::None
+                } else {
                     tracing::info!(?players, "paused media while recording");
+                    Self::Paused { players }
                 }
-                let browser = browser_pause_allowed(
-                    app_settings::pause_browser_media(),
-                    crate::meeting::system_audio_authorization(),
-                )
-                .then(|| browser_media::pause(&mut NativeBrowserAudio::for_pause()))
-                .flatten();
-                if browser.is_some() {
-                    tracing::info!("paused the browser while recording");
-                }
-                paused_guard(players, browser)
             }
             RecordingAudioBehavior::DoNothing => Self::None,
         }
@@ -477,14 +442,7 @@ impl Drop for AudioBehaviorGuard {
                     tracing::info!(volume = *previous, "restored system output after recording");
                 }
             }
-            Self::Paused { players, browser } => {
-                // The browser first: its play goes to whatever macOS treats as
-                // playing, which a player resumed just before could become.
-                if let Some(paused) = browser.take() {
-                    browser_media::resume(&mut NativeBrowserAudio::for_resume(), paused);
-                }
-                resume_media(players);
-            }
+            Self::Paused { players } => resume_media(players),
             Self::None => {}
         }
     }
@@ -690,28 +648,6 @@ mod tests {
     use Effect::{Mute, Pause, Sleep};
     use Event::{Held, Restored, Then};
     use RecordingAudioBehavior::{DoNothing, Mute as MuteOutput, PauseMedia};
-
-    #[test]
-    fn the_browser_pauses_only_with_system_audio_granted() {
-        use crate::meeting::SystemAudioAuthorization::{Denied, Granted, NotDetermined, Unknown};
-        assert!(browser_pause_allowed(true, Granted));
-        for authorization in [Denied, NotDetermined, Unknown] {
-            assert!(!browser_pause_allowed(true, authorization));
-        }
-        assert!(!browser_pause_allowed(false, Granted));
-    }
-
-    #[test]
-    fn a_pause_with_nothing_paused_holds_nothing() {
-        assert!(matches!(
-            paused_guard(Vec::new(), None),
-            AudioBehaviorGuard::None
-        ));
-        let guard = paused_guard(Vec::new(), Some(PausedBrowser::for_test()));
-        assert!(matches!(guard, AudioBehaviorGuard::Paused { .. }));
-        // Dropping it would send a real play.
-        std::mem::forget(guard);
-    }
 
     fn dictation(
         controller: &RecordingEnvironmentController,

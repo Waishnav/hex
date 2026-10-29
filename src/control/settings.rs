@@ -142,11 +142,6 @@ const KEYS: &[Key] = &[
         "What other audio does while you dictate",
     ),
     key(
-        "pause_browser_media",
-        Kind::Bool,
-        "Also pause a playing browser tab while dictating (macOS, with Pause media)",
-    ),
-    key(
         "double_tap_lock",
         Kind::Bool,
         "Double-tap the dictation shortcut to keep recording hands-free",
@@ -330,14 +325,9 @@ const KEYS: &[Key] = &[
         Kind::Bool,
         "Paste with Ctrl-Shift-V for terminals (Linux)",
     ),
-    key(
-        "share_dictation_shortcut",
-        Kind::Bool,
-        "Let other apps see the dictation shortcut too (Windows)",
-    ),
     optional(
         "ui_language",
-        Kind::Choice(&["en", "pl", "zh", "ja", "de", "es", "uk"]),
+        Kind::Choice(&["en", "pl", "zh", "ja", "de", "es"]),
         "Interface language; none follows the system",
     ),
     key(

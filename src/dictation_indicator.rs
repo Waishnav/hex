@@ -11,7 +11,6 @@ use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
 use crate::dot_scope::{self, Pose, Scope, Stage, Tuning};
-use crate::hud_placement::Island;
 use crate::spring::{REDUCED_FADE, Spec, Spring};
 
 pub const WINDOW_WIDTH: f32 = 112.0;
@@ -317,26 +316,6 @@ fn recording_flash_for(phase: Phase, editing: bool, elapsed: Duration) -> f32 {
 struct DotScope {
     scope: Scope,
     stage: Stage,
-    /// The tuning as set, before [`fill_island`].
-    tuning: Tuning,
-    /// The notch island the HUD sits in, if any.
-    island: Option<Island>,
-}
-
-/// The tuning that fills an island: the field as wide as the island minus
-/// its corners, recording and processing alike, with as many more columns
-/// as keep the dot spacing.
-fn fill_island(tuning: Tuning, island: Option<Island>) -> Tuning {
-    let Some(island) = island else {
-        return tuning;
-    };
-    let width = island.plate_width();
-    Tuning {
-        columns: (tuning.columns * width / tuning.width).round(),
-        width,
-        processing_width: width,
-        ..tuning
-    }
 }
 
 /// The HUD's state: what the listener reported and every spring.
@@ -396,8 +375,6 @@ impl IndicatorModel {
             dot_scope: dot_scope.map(|tuning| DotScope {
                 scope: Scope::new(tuning),
                 stage: Stage::Recording,
-                tuning,
-                island: None,
             }),
             loudness: SILENT,
             demo_voice: None,
@@ -414,18 +391,7 @@ impl IndicatorModel {
     /// Dot scope's tuning, when it draws Dot scope.
     #[cfg(target_os = "macos")]
     pub fn dot_scope_tuning(&self) -> Option<Tuning> {
-        self.dot_scope.as_ref().map(|dots| dots.tuning)
-    }
-
-    /// Spreads Dot scope's field across the notch island it now sits in.
-    #[cfg(target_os = "macos")]
-    pub fn set_island(&mut self, island: Option<Island>) {
-        if let Some(dots) = &mut self.dot_scope
-            && dots.island != island
-        {
-            dots.island = island;
-            dots.scope.tune(fill_island(dots.tuning, island));
-        }
+        self.dot_scope.as_ref().map(|dots| dots.scope.tuning())
     }
 
     pub fn handle(&mut self, event: DictationIndicatorEvent, now: Instant, reduce: bool) {
@@ -447,8 +413,7 @@ impl IndicatorModel {
             }
             DictationIndicatorEvent::ConfigureDotScope(tuning) => {
                 if let Some(dots) = &mut self.dot_scope {
-                    dots.tuning = tuning;
-                    dots.scope.tune(fill_island(tuning, dots.island));
+                    dots.scope.tune(tuning);
                 }
             }
             DictationIndicatorEvent::DemoVoice => {
@@ -779,20 +744,6 @@ impl IndicatorModel {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn an_island_spreads_the_field_across_it_at_the_same_spacing() {
-        let tuning = Tuning::default();
-        assert_eq!(fill_island(tuning, None), tuning);
-        let island = Island {
-            notch: [185.0, 32.0],
-            width: 241.0,
-            top: -64.0,
-        };
-        let filled = fill_island(tuning, Some(island)).clamped();
-        assert_eq!((filled.width, filled.processing_width), (209.0, 209.0));
-        assert_eq!((filled.columns, filled.rows), (80.0, tuning.rows));
-    }
 
     #[test]
     fn meter_helper_reports_rms_and_peak() {

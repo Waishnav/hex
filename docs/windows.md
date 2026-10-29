@@ -16,10 +16,7 @@ speaking and release Space to transcribe and paste. In **Toggle** mode, press
 `Ctrl+Space` to start and again to finish. Only Escape cancels; holding a
 modifier on its own does nothing. Hex consumes the chord while it matches, so
 applications and input methods no longer see `Ctrl+Space`; rebind it in Settings
-if you rely on that chord elsewhere. To let another app use the same key, such as
-a Discord push-to-talk key, turn on **Share dictation shortcut with other apps**
-under Advanced: Hex still reacts to it but passes its key-down and key-up on,
-which can also trigger that binding in other apps. In Hold mode, tap the shortcut twice within
+if you rely on that chord elsewhere. In Hold mode, tap the shortcut twice within
 300 ms to lock recording, then press it again to finish. Paste Last defaults to
 `Ctrl+Alt+V`. Settings changes apply live or through an automatic listener
 restart.
@@ -271,7 +268,7 @@ current-user startup registry, UI Automation, and Windows capture APIs.
 | History retention, list, detail, search, copy, delete, and clear | Implemented |
 | Text replacements | Implemented in the Windows Modes pane using the shared phrase-boundary replacement engine |
 | Application picker in Modes | Implemented; lists Start menu shortcuts, App Paths, and apps with an open window, with each executable's icon; "Choose a file…" opens the native dialog through `rune::FileDialogs` |
-| Interface language | Implemented on every OS; English, Polish, Chinese, Japanese, German, Spanish, and Ukrainian |
+| Interface language | Implemented on every OS; English, Polish, Chinese, Japanese, German, and Spanish |
 | Resident tray and Launch at login | Implemented |
 | Application modes with per-mode corrections, OpenCode rewriting, and transformations | Implemented on the shared ordered processing policy; global and contextual profiles persist their own corrections, model, reasoning variant, deadline, and ordered built-in/TypeScript transformations, while modes match by application name — physical end-to-end paste/UI validation remains |
 | Voice Action with selected-text capture and in-app OpenCode model selection | Implemented; selection is read through a clipboard round trip rather than UI Automation |

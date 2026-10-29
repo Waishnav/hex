@@ -274,13 +274,18 @@ enum Envelope {
         swell: f32,
         half_width: f32,
     },
-    /// Done, for every look: a front clears the field from the middle
-    /// out as it collapses, while the light ahead of it fades. Sweep's
-    /// ironed field is already dark (`field` 0), so only the fronts show.
+    /// Sweep's done: the beam runs to the right end over the dark field.
+    Wipe {
+        front: f32,
+        head: f32,
+    },
+    /// Flow's and Pulse's done: a front clears the braid behind it, from
+    /// the left (Flow) or from the middle out (Pulse), while the light
+    /// ahead of it fades.
     Clear {
         front: f32,
         head: f32,
-        field: f32,
+        from_middle: bool,
         working: Working,
         glow: f32,
         swell: f32,
@@ -326,17 +331,18 @@ impl Scan {
                 let light = working.light(x, half_width);
                 (1.0, 1.0 + head * light, swell * light)
             }
+            Envelope::Wipe { front, head } => (0.0, head * bump(x - front, 5.0), 0.0),
             Envelope::Clear {
                 front,
                 head,
-                field,
+                from_middle,
                 working,
                 glow,
                 swell,
                 half_width,
             } => {
-                let d = x.abs();
-                let keep = field * smoothstep(front - 12.0, front - 2.0, d);
+                let d = if from_middle { x.abs() } else { x };
+                let keep = smoothstep(front - 12.0, front - 2.0, d);
                 let light = working.light(x, half_width);
                 (
                     keep,
@@ -353,6 +359,7 @@ pub struct Scope {
     tuning: Tuning,
     stage: Stage,
     elapsed: f32,
+    front_at_done: f32,
     /// How fast the done front was moving when done arrived, pt/s.
     speed_at_done: f32,
     /// How long it had processed when done arrived, s.
@@ -394,6 +401,7 @@ impl Scope {
             tuning: tuning.clamped(),
             stage: Stage::Recording,
             elapsed: 0.0,
+            front_at_done: 0.0,
             speed_at_done: 0.0,
             done_from: 0.0,
             flow_offset: 0.0,
@@ -649,15 +657,38 @@ impl Scope {
         }
     }
 
-    /// Done clears from the middle out for every look, its front already
-    /// moving at the pulses' speed.
+    /// Where done's front starts and how fast it is already moving: the
+    /// beam where it is (Sweep), the rightmost band (Flow), or the middle
+    /// at the pulses' speed (Pulse).
     fn arm_done(&mut self) {
-        self.speed_at_done = 1.5 * self.pulse_speed();
-        self.done_from = if self.stage == Stage::Processing {
-            self.elapsed
-        } else {
-            0.0
-        };
+        let width = self.width.x;
+        let processing = self.stage == Stage::Processing;
+        match self.tuning.processing {
+            Processing::Sweep => {
+                let elapsed = if processing {
+                    self.elapsed
+                } else {
+                    self.tuning.shimmer_pass / 2.0
+                };
+                self.front_at_done = self.process_front(elapsed, width);
+                self.speed_at_done = 0.0;
+            }
+            Processing::Flow => {
+                if !processing {
+                    self.flow_offset = -width / 2.0 - 4.0;
+                }
+                let spacing = self.flow_spacing();
+                let last = width / 2.0 - 4.0;
+                let bands = ((last - self.flow_offset) / spacing).floor();
+                self.front_at_done = self.flow_offset + bands.max(0.0) * spacing;
+                self.speed_at_done = self.flow_speed();
+            }
+            Processing::Pulse => {
+                self.front_at_done = 0.0;
+                self.speed_at_done = 1.5 * self.pulse_speed();
+            }
+        }
+        self.done_from = if processing { self.elapsed } else { 0.0 };
     }
 
     fn process_front(&self, elapsed: f32, width: f32) -> f32 {
@@ -708,24 +739,21 @@ impl Scope {
                     },
                 }
             }
-            Stage::Done => {
+            Stage::Done if self.tuning.processing != Processing::Sweep => {
                 let target = width / 2.0 + 8.0;
-                let front = hermite(0.0, self.speed_at_done, target, e / WIPE);
-                // Sweep's ironed field stays flat and dark.
-                let sweep = self.tuning.processing == Processing::Sweep;
+                let front = hermite(self.front_at_done, self.speed_at_done, target, e / WIPE);
+                let from_middle = self.tuning.processing == Processing::Pulse;
                 Scan {
-                    helix: if sweep { 0.0 } else { WORK_HELIX },
+                    helix: WORK_HELIX,
                     decay: 1.0 - 0.6 * smoothstep(0.0, 0.12, e),
                     tail: 1.0 - smoothstep(0.0, 0.15, e),
                     grid: 1.0 - smoothstep(0.2, 0.4, e),
                     envelope: Envelope::Clear {
                         front,
                         head: 2.8 * smoothstep(0.0, 0.04, e) * (1.0 - smoothstep(0.22, 0.32, e)),
-                        field: if sweep { 0.0 } else { 1.0 },
+                        from_middle,
                         working: self.working(self.done_from + e),
-                        glow: if sweep { 0.0 } else { 2.5 }
-                            * self.tuning.shimmer
-                            * (1.0 - smoothstep(0.0, 0.18, e)),
+                        glow: 2.5 * self.tuning.shimmer * (1.0 - smoothstep(0.0, 0.18, e)),
                         swell: 0.9,
                         half_width: width / 2.0,
                     },
@@ -746,6 +774,20 @@ impl Scope {
                         iron,
                         front: self.process_front(e, width),
                         head,
+                    },
+                }
+            }
+            Stage::Done => {
+                let target = width / 2.0 - 4.0;
+                let start = self.front_at_done;
+                Scan {
+                    helix: 0.0,
+                    decay: 1.0 - 0.75 * smoothstep(0.0, 0.08, e),
+                    tail: 1.0 - smoothstep(0.0, 0.1, e),
+                    grid: 1.0 - smoothstep(0.2, 0.4, e),
+                    envelope: Envelope::Wipe {
+                        front: start + (target - start) * pass_position(e / WIPE),
+                        head: 2.8 * smoothstep(0.0, 0.035, e) * (1.0 - smoothstep(0.22, 0.32, e)),
                     },
                 }
             }
@@ -1155,32 +1197,27 @@ mod tests {
     }
 
     #[test]
-    fn done_clears_from_the_middle_out_for_every_look() {
-        for look in Processing::ALL {
-            let mut scope = Scope::new(with(look));
-            run(&mut scope, 0.5, recording(0.5));
-            run(&mut scope, 1.0, processing());
-            run(
-                &mut scope,
-                0.12,
-                Frame {
-                    stage: Stage::Done,
-                    ..processing()
-                },
-            );
-            let (columns, rows) = (scope.columns(), scope.rows());
-            let column = |i: usize| {
-                (0..rows)
-                    .map(|j| scope.dots()[j * columns + i][0])
-                    .sum::<f32>()
-            };
-            let middle = column(columns / 2);
-            let brightest = (0..columns).map(column).fold(0.0, f32::max);
-            assert!(
-                middle < 0.5 * brightest,
-                "{look:?}: middle {middle} vs brightest {brightest}"
-            );
-        }
+    fn done_picks_up_the_band_where_flow_left_it() {
+        let mut scope = Scope::new(with(Processing::Flow));
+        run(&mut scope, 0.5, recording(0.5));
+        run(&mut scope, 1.0, processing());
+        let speed = scope.flow_speed();
+        scope.advance(
+            1.0 / 240.0,
+            Frame {
+                stage: Stage::Done,
+                ..processing()
+            },
+        );
+        let start = scope.front_at_done;
+        assert!(start <= scope.width.x / 2.0 - 4.0 && start > -scope.width.x / 2.0 - 5.0);
+        let step = 0.004;
+        let early = (hermite(start, speed, 50.0, step / WIPE) - start) / step;
+        assert!(
+            (early - speed).abs() < 0.15 * speed + 3.0,
+            "{early} vs {speed}"
+        );
+        assert_eq!(hermite(start, speed, 50.0, 1.0), 50.0);
     }
 
     #[test]
@@ -1249,7 +1286,7 @@ mod tests {
             ..Tuning::default()
         });
         run(&mut scope, 0.2, recording(0.3));
-        assert_eq!(scope.dots().len(), 64 * 15);
+        assert_eq!(scope.dots().len(), crate::dot_scope::MAX_DOTS);
     }
 
     #[test]

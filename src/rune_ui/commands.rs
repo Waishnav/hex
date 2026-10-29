@@ -7,15 +7,15 @@
 use rune::{El, TextEdit, Tx, col, row, text};
 use rune_kit::TextInput;
 
-use super::Ui;
 use super::controls::{
-    ButtonKind, DESCRIPTION, METRICS, Paint, button, card, setting_row, toggle_row,
+    ButtonKind, DESCRIPTION, METRICS, Paint, button, card, icon_row, icon_toggle_row, setting_row,
 };
 use super::lists::{
     detail_header, detail_title, error_panel, fact, group_label, list_row, message, placeholder,
     source_list, split,
 };
 use super::platform::{CatalogCommand, CommandModel, PlatformRequest, Workspace};
+use super::{Pane, Ui, general, icons};
 use crate::commands::CommandScope;
 use crate::desktop_i18n::tr;
 
@@ -72,7 +72,7 @@ fn task_label(task: &str) -> &str {
     }
 }
 
-fn set_enabled(ui: &mut Ui, enabled: bool) {
+pub(super) fn set_enabled(ui: &mut Ui, enabled: bool) {
     if enabled && ui.settings.release_microphone_while_idle {
         ui.commands.confirm_enable = true;
         return;
@@ -111,43 +111,7 @@ fn agent_prompt(workspace: &str) -> String {
 /// the list + detail body.
 pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
     let state = &ui.platform;
-    let mut actions = Vec::new();
-    actions.push(match state.workspace {
-        Workspace::Missing => button(
-            p,
-            "commands-create-config",
-            tr("Create config"),
-            ButtonKind::Secondary,
-            |ui: &mut Ui, _| ui.ask(PlatformRequest::CreateCommandsConfig),
-        ),
-        Workspace::Creating => text(tr("Creating config…"))
-            .key("commands-creating")
-            .font(DESCRIPTION)
-            .color(p.muted()),
-        Workspace::Ready | Workspace::Error => button(
-            p,
-            "commands-open-config",
-            tr("Edit config"),
-            ButtonKind::Secondary,
-            |ui: &mut Ui, _| ui.ask(PlatformRequest::OpenCommandsConfig),
-        ),
-    });
-    if matches!(state.workspace, Workspace::Ready | Workspace::Error) {
-        actions.push(button(
-            p,
-            "commands-copy-prompt",
-            if ui.commands.prompt_copied {
-                tr("Copied")
-            } else {
-                tr("Copy agent prompt")
-            },
-            ButtonKind::Secondary,
-            |ui: &mut Ui, tx: &mut Tx| {
-                tx.copy(agent_prompt(&ui.platform.workspace_path));
-                ui.commands.prompt_copied = true;
-            },
-        ));
-    }
+    let actions = vec![general::advanced_toggle(ui, p, Pane::Commands).ml(0.0)];
     let query = ui.commands.search.text.trim().to_lowercase();
     let visible: Vec<&CatalogCommand> = state
         .commands
@@ -219,6 +183,9 @@ pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
     let body = split(p, "commands-body", column, detail);
 
     let mut top = vec![enable_card(ui, p)];
+    if general::advanced_open(ui, Pane::Commands) {
+        top.push(advanced_card(ui, p));
+    }
     if let Some(error) = state
         .workspace_error
         .as_deref()
@@ -252,12 +219,70 @@ pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
     )
 }
 
+/// The config file and the prompt that helps an agent edit it.
+fn advanced_card(ui: &Ui, p: Paint) -> El {
+    let state = &ui.platform;
+    let config = match state.workspace {
+        Workspace::Missing => button(
+            p,
+            "commands-create-config",
+            tr("Create config"),
+            ButtonKind::Secondary,
+            |ui: &mut Ui, _| ui.ask(PlatformRequest::CreateCommandsConfig),
+        ),
+        Workspace::Creating => text(tr("Creating config…"))
+            .key("commands-creating")
+            .font(DESCRIPTION)
+            .color(p.muted()),
+        Workspace::Ready | Workspace::Error => button(
+            p,
+            "commands-open-config",
+            tr("Edit config"),
+            ButtonKind::Secondary,
+            |ui: &mut Ui, _| ui.ask(PlatformRequest::OpenCommandsConfig),
+        ),
+    };
+    let mut rows = vec![icon_row(
+        p,
+        "commands-config",
+        &icons::FILE,
+        "hex.config.ts",
+        None,
+        config,
+    )];
+    if matches!(state.workspace, Workspace::Ready | Workspace::Error) {
+        rows.push(icon_row(
+            p,
+            "commands-prompt",
+            &icons::COPY,
+            tr("Copy agent prompt"),
+            None,
+            button(
+                p,
+                "commands-copy-prompt",
+                if ui.commands.prompt_copied {
+                    tr("Copied")
+                } else {
+                    tr("Copy")
+                },
+                ButtonKind::Secondary,
+                |ui: &mut Ui, tx: &mut Tx| {
+                    tx.copy(agent_prompt(&ui.platform.workspace_path));
+                    ui.commands.prompt_copied = true;
+                },
+            ),
+        ));
+    }
+    card(p, "advanced", rows)
+}
+
 /// The opt-in, and the confirmation that keeps the released microphone
 /// ready for it.
 fn enable_card(ui: &Ui, p: Paint) -> El {
-    let mut rows = vec![toggle_row(
+    let mut rows = vec![icon_toggle_row(
         p,
         "commands-enabled",
+        Pane::Commands.icon(),
         tr("Voice commands"),
         tr("Say a phrase to open apps and websites or press keys"),
         ui.settings.commands_enabled,
@@ -266,40 +291,44 @@ fn enable_card(ui: &Ui, p: Paint) -> El {
             set_enabled(ui, enabled);
         },
     )];
-    if ui.commands.confirm_enable {
-        rows.push(
-            setting_row(
-                p,
-                "confirm-enable",
-                tr("Keep the microphone ready?"),
-                Some(tr(
-                    "Commands listen all the time, so Hex stops releasing the microphone when idle",
-                )),
-                row()
-                    .key("actions")
-                    .gap(8.0)
-                    .child(button(
-                        p,
-                        "cancel-enable-commands",
-                        tr("Cancel"),
-                        ButtonKind::Secondary,
-                        |ui: &mut Ui, _| ui.commands.confirm_enable = false,
-                    ))
-                    .child(
-                        button(
-                            p,
-                            "confirm-enable-commands",
-                            tr("Keep microphone ready & enable commands"),
-                            ButtonKind::Primary,
-                            |ui: &mut Ui, _| keep_ready_and_enable(ui),
-                        )
-                        .default_button(),
-                    ),
-            )
-            .fill(p.k.c.hover),
-        );
-    }
+    rows.extend(confirm_row(ui, p));
     card(p, "enable", rows)
+}
+
+/// Commands listen all the time: the confirmation that keeps the released
+/// microphone ready for them.
+pub(super) fn confirm_row(ui: &Ui, p: Paint) -> Option<El> {
+    ui.commands.confirm_enable.then(|| {
+        setting_row(
+            p,
+            "confirm-enable",
+            tr("Keep the microphone ready?"),
+            Some(tr(
+                "Commands listen all the time, so Hex stops releasing the microphone when idle",
+            )),
+            row()
+                .key("actions")
+                .gap(8.0)
+                .child(button(
+                    p,
+                    "cancel-enable-commands",
+                    tr("Cancel"),
+                    ButtonKind::Secondary,
+                    |ui: &mut Ui, _| ui.commands.confirm_enable = false,
+                ))
+                .child(
+                    button(
+                        p,
+                        "confirm-enable-commands",
+                        tr("Keep microphone ready & enable commands"),
+                        ButtonKind::Primary,
+                        |ui: &mut Ui, _| keep_ready_and_enable(ui),
+                    )
+                    .default_button(),
+                ),
+        )
+        .fill(p.k.c.hover)
+    })
 }
 
 /// The voice command model's notice while commands are on and it is not

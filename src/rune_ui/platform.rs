@@ -46,8 +46,6 @@ pub(super) struct Capabilities {
     pub(super) listener_control: bool,
     /// Paste with Ctrl-Shift-V for terminals.
     pub(super) terminal_paste: bool,
-    /// The dictation shortcut can pass through to other apps (Windows).
-    pub(super) share_shortcut: bool,
     /// The experimental Hex Microphone virtual driver (macOS).
     pub(super) hex_microphone: bool,
     /// The window sees dictation events, so the tour can end with a
@@ -75,7 +73,6 @@ impl Capabilities {
         dock_icon: false,
         listener_control: true,
         terminal_paste: true,
-        share_shortcut: false,
         hex_microphone: false,
         practice_dictation: false,
         fun: false,
@@ -94,7 +91,6 @@ impl Capabilities {
         dock_icon: true,
         listener_control: false,
         terminal_paste: false,
-        share_shortcut: false,
         hex_microphone: true,
         practice_dictation: true,
         fun: true,
@@ -113,7 +109,6 @@ impl Capabilities {
         dock_icon: false,
         listener_control: true,
         terminal_paste: false,
-        share_shortcut: true,
         hex_microphone: false,
         practice_dictation: false,
         fun: false,

@@ -144,9 +144,7 @@ substitute for source inspection or a second roadmap.
   handoff, bounded HTTP parsing, model preparation progress, and raw
   transcription routes, the `/streams` routes (contract:
   [`docs/streams.md`](docs/streams.md)), plus the always-on authenticated
-  `POST /control`, and `GET /profile/vitals` (process footprint and CPU from
-  Rune's `procwatch`, sampled by `macos_rune`; debug builds also count the heap
-  and report the `speech.model_weights` gauge from `parakeet`).
+  `POST /control`.
 - `control`: the release `hex` control surface: the versioned
   `ControlRequest`/`ControlReply` protocol, the settings registry behind
   `hex settings` (one dotted key per persisted setting, with the window's
@@ -285,9 +283,10 @@ substitute for source inspection or a second roadmap.
   snapshot-and-action types shared by the Linux and Windows hosts, the window,
   and `hex status`.
 - `rune_ui`: the one window on macOS, Windows, and Linux, on Rune with
-  `rune-kit` and the OpenCode theme: General, Modes with mode-owned
-  corrections and processing, Voice Action, opt-in Commands, Meetings (each
-  feature owns its settings), History, and under Experiments the Voice Filter
+  `rune-kit` and the OpenCode theme: General and History, then the opt-in
+  Voice Action, Commands, and Meetings once on (each feature owns its
+  settings, rarer ones in the pane's Advanced fold), and under Labs (`labs`:
+  the opt-in switches) Modes with mode-owned corrections and processing, the Voice Filter
   and developer-only HUD Lab (release too while `dot-scope` is on, Dot scope
   only) and Activity, the transcription
   picker, the onboarding tour, the macOS meeting capsules, the `--snap`
@@ -400,7 +399,7 @@ substitute for source inspection or a second roadmap.
   and changes what a recording leaves out with `Recording::set_exclusions`.
   `capture_host::library` reads the captures
   folder for `hex capture list|show|send|route`. `rune_ui/scrawl.rs` is its pane
-  (Experiments › Scrawl) and `CaptureSettings` its `capture.*` settings;
+  (Labs › Scrawl) and `CaptureSettings` its `capture.*` settings;
   `hex capture` is `control::cli::capture` (macOS through the running app;
   Linux reads the folder itself and hands start/stop/cancel to the
   listener over `linux_service`).

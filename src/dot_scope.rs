@@ -16,10 +16,9 @@ mod scope;
 pub use scope::*;
 
 /// The most dots [`Scope`] lights; the shader's dot buffer holds this many.
-/// A wide field gets fewer rows ([`Tuning::clamped`]).
-pub const MAX_COLUMNS: usize = 96;
+pub const MAX_COLUMNS: usize = 64;
 pub const MAX_ROWS: usize = 15;
-pub const MAX_DOTS: usize = 1024;
+pub const MAX_DOTS: usize = MAX_COLUMNS * MAX_ROWS;
 /// The plate height the HUD window is laid out around.
 pub const PLATE_HEIGHT: f32 = 26.0;
 
@@ -77,23 +76,21 @@ pub struct Tuning {
     /// pretend one in the middle of the menu bar, for trying it on a
     /// flat display.
     pub pretend_notch: bool,
-    /// How far From the notch's island reaches past the notch on each
-    /// side, pt. The braid fills the island.
-    pub island_spread: f32,
 }
 
 /// How Dot scope says "working" while a dictation transcribes and
-/// processes. Every look settles into done the same way: the field clears
-/// from the middle out as it collapses.
+/// processes, and how it settles into done.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Processing {
     /// Round 1: the braid irons flat and a beam sweeps back and forth.
     Sweep,
-    /// The braid keeps turning and light flows through it left to right.
+    /// The braid keeps turning and light flows through it left to right;
+    /// done carries the last band off the right edge.
     #[default]
     Flow,
-    /// Pulses leave the middle the way the voice did.
+    /// Pulses leave the middle the way the voice did; done is one last
+    /// ring that clears the field from the middle out.
     Pulse,
 }
 
@@ -165,7 +162,6 @@ impl Default for Tuning {
             processing: Processing::default(),
             placement: Placement::default(),
             pretend_notch: false,
-            island_spread: 28.0,
         }
     }
 }
@@ -208,17 +204,17 @@ const fn whole(index: usize, key: &'static str, label: &'static str, min: f32, m
     }
 }
 
-pub const KNOBS: [Knob; 22] = [
+pub const KNOBS: [Knob; 21] = [
     whole(0, "dot-columns", "Columns", 11.0, MAX_COLUMNS as f32),
     whole(1, "dot-rows", "Rows", 3.0, MAX_ROWS as f32),
     knob(2, "dot-spacing", "Dot spacing", 1.6, 4.0, " pt"),
-    knob(3, "dot-width", "Recording width", 40.0, 280.0, " pt"),
+    knob(3, "dot-width", "Recording width", 40.0, 150.0, " pt"),
     knob(
         4,
         "dot-processing-width",
         "Processing width",
         26.0,
-        280.0,
+        150.0,
         " pt",
     ),
     knob(5, "dot-height", "Height", 14.0, 40.0, " pt"),
@@ -244,14 +240,6 @@ pub const KNOBS: [Knob; 22] = [
         " s",
     ),
     knob(20, "dot-noise-floor", "Noise floor", -80.0, -30.0, " dB"),
-    knob(
-        21,
-        "dot-island-spread",
-        "Island past the notch",
-        0.0,
-        60.0,
-        " pt",
-    ),
 ];
 
 impl Knob {
@@ -312,8 +300,7 @@ impl Tuning {
             17 => &mut self.transition,
             18 => &mut self.bounce,
             19 => &mut self.auto_release,
-            20 => &mut self.noise_floor,
-            _ => &mut self.island_spread,
+            _ => &mut self.noise_floor,
         }
     }
 
@@ -328,8 +315,6 @@ impl Tuning {
             };
             knob.set(&mut self, value);
         }
-        let rows = (MAX_DOTS / self.columns as usize).min(MAX_ROWS);
-        self.rows = self.rows.min(rows as f32);
         self
     }
 
@@ -486,24 +471,6 @@ mod tests {
         let wild: Tuning = serde_json::from_str(r#"{"columns": 900, "rows": 4.4}"#).unwrap();
         let wild = wild.clamped();
         assert_eq!((wild.columns, wild.rows), (MAX_COLUMNS as f32, 4.0));
-    }
-
-    #[test]
-    fn a_wide_field_gives_up_rows_to_stay_in_the_dot_buffer() {
-        let wide = Tuning {
-            columns: 96.0,
-            rows: 15.0,
-            ..Tuning::default()
-        }
-        .clamped();
-        assert_eq!(wide.rows, 10.0);
-        assert!((wide.columns * wide.rows) as usize <= MAX_DOTS);
-        let narrow = Tuning {
-            rows: 15.0,
-            ..Tuning::default()
-        }
-        .clamped();
-        assert_eq!(narrow.rows, 15.0);
     }
 
     #[test]

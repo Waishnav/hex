@@ -3,11 +3,11 @@
 //! Delete. It shares the host's store, which the listener records into.
 
 use rune::{El, TextEdit, Tx, col, row, text};
-use rune_kit::{Select, SelectAppearance, TextInput};
+use rune_kit::TextInput;
 
-use super::controls::{ButtonKind, DESCRIPTION, METRICS, Paint, button};
+use super::controls::{ButtonKind, DESCRIPTION, METRICS, Paint, button, card, icon_row};
 use super::lists::{message, placeholder, section_label, source_item, source_list, split};
-use super::{Menu, Ui};
+use super::{Pane, Ui, general, icons};
 use crate::desktop_i18n::{event_age, tr, tr_fill, tr_named};
 use crate::history::{History, HistoryEntry, HistoryKind, HistoryRetention};
 
@@ -180,29 +180,6 @@ pub(super) fn pane(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> (Vec<El>, El) {
         .on_edit(|ui: &mut Ui| &mut ui.history.search)
         .build(p.k)
         .key("history-search");
-    let labels: Vec<&str> = HistoryRetention::ALL
-        .iter()
-        .map(|r| tr(r.label()))
-        .collect();
-    let current = tr_fill("Keep: {}", tr(ui.settings.history_retention.label()));
-    let retention = Select::new("history-retention", &labels)
-        .appearance(SelectAppearance::Field)
-        .width(160.0)
-        .current(Some(&current))
-        .open(ui.open == Some(Menu::HistoryRetention))
-        .on_toggle(|ui: &mut Ui| {
-            ui.open = (ui.open != Some(Menu::HistoryRetention)).then_some(Menu::HistoryRetention);
-        })
-        .on_close(|ui: &mut Ui| ui.open = None)
-        .on_choose(|ui: &mut Ui, choice: &str, _: &mut Tx| {
-            if let Some(retention) = HistoryRetention::ALL
-                .into_iter()
-                .find(|r| tr(r.label()) == choice)
-            {
-                set_retention(ui, retention);
-            }
-        })
-        .build(p.k, layer);
     let clear_button = if pane.clear_armed {
         button(
             p,
@@ -220,7 +197,42 @@ pub(super) fn pane(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> (Vec<El>, El) {
             |ui: &mut Ui, _| clear(ui),
         )
     };
-    let actions = vec![search, retention, clear_button];
+    let advanced = general::advanced_open(ui, Pane::History).then(|| {
+        let keep = general::pick_row(
+            ui,
+            p,
+            "history-retention",
+            &icons::CLOCK,
+            tr("Keep for"),
+            HistoryRetention::ALL
+                .iter()
+                .map(|r| tr(r.label()))
+                .collect(),
+            HistoryRetention::ALL
+                .iter()
+                .position(|r| *r == ui.settings.history_retention)
+                .unwrap_or(0),
+            |ui, index| set_retention(ui, HistoryRetention::ALL[index]),
+            layer,
+        );
+        let clear = icon_row(
+            p,
+            "history-clear-row",
+            &icons::TRASH,
+            tr("Clear history"),
+            None,
+            clear_button,
+        );
+        col()
+            .key("advanced")
+            .px(METRICS.gutter)
+            .pb(12.0)
+            .child(card(p, "card", vec![keep, clear.into()]))
+    });
+    let actions = vec![
+        search,
+        general::advanced_toggle(ui, p, Pane::History).ml(0.0),
+    ];
 
     let c = &p.k.c;
     let mut list = col().key("history-list");
@@ -306,6 +318,12 @@ pub(super) fn pane(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> (Vec<El>, El) {
         super::scroll_body("history-scroll", source_list(list)),
         detail(ui, p),
     );
+    let body = col()
+        .key("history-pane")
+        .grow(1.0)
+        .shrink()
+        .children(advanced)
+        .child(body);
     (actions, body)
 }
 

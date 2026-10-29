@@ -937,8 +937,8 @@ Dot scope                                    // dot_scope
 │   ├── Flow (default) -> The braid keeps turning; bands of light travel right
 │   ├── Pulse -> Rings leave the middle
 │   └── Sweep -> Braid irons flat; a cool beam sweeps 76 pt (round 1)
-├── Completed -> Every look clears from the middle out as it collapses
-│   (0.3 s; Sweep's dark field shows only the two fronts); then it fades
+├── Completed -> Flow carries its last band off the right edge, Pulse clears
+│   from the middle out, Sweep's beam wipes the field (0.3 s); then it fades
 ├── Failed -> Coral, then fades
 ├── Reduce Motion -> A still braid; opacity fades only
 ├── Dark / light -> Read from AppleInterfaceStyle at each capture start
@@ -955,10 +955,8 @@ Placement                                     // hud_placement::place
 ├── Below the menu bar (default) -> Where the capsule sits, or above the Dock
 ├── In the menu bar -> A plate fitted to the bar's height, centred on a flat
 │   screen, just right of the notch on a notched one
-├── From the notch -> A black island grows out of the notch, 28 pt wider
-│   each side (Island past the notch, 0–60 pt), and shrinks back into it;
-│   the field fills it, less 16 pt each side, at the same dot spacing (more
-│   columns); In the menu bar on a flat screen
+├── From the notch -> A black island grows out of the notch, holding the plate,
+│   and shrinks back into it; In the menu bar on a flat screen
 ├── Pretend notch -> Draws the island from a 185 pt notch on a flat screen
 └── Over the menu bar -> Window level NSStatusWindowLevel + 1, click-through
 ```
@@ -967,7 +965,7 @@ The window is 320×128 pt so the widest plate, its shadow, and the widest
 island fit. Notch metrics come from `safeAreaInsets.top` and
 `auxiliaryTopLeftArea`/`auxiliaryTopRightArea`; the bar's height from
 `NSStatusBar.systemStatusBar.thickness`. HUD Lab tunes it live, in release
-builds too while the experiment is on (Settings › Experiments › HUD Lab,
+builds too while the experiment is on (Settings › Labs › HUD Lab,
 showing only Dot scope's section; debug builds alone keep the capsule's
 styles):
 
@@ -977,8 +975,7 @@ HUD Lab (dot-scope on)
 ├── Move a slider -> Applies live to whatever the HUD shows, a real
 │   dictation included; the demo doesn't restart
 ├── Recording / Transcribing / Processing -> Restarts the demo in that state
-├── Processing, Placement, Pretend notch, Auto level, Island past the notch
-│   -> Apply live
+├── Processing, Placement, Pretend notch, Auto level -> Apply live
 ├── Save -> Writes dot-scope.json in Application Support; the HUD loads it at launch
 ├── Copy values -> The same JSON; Reset -> the prototype's values
 └── Leave the pane or close the window -> The demo hides; unsaved values
@@ -986,24 +983,12 @@ HUD Lab (dot-scope on)
 ```
 
 The playground (⇧⌘D, experiment `playground`) lists HUD stories while
-`dot-scope` is on ([hud_stories.rs](../../src/rune_ui/hud_stories.rs)),
-so every combination plays without HUD Lab:
-
-```ts
-HUD stories                                  // R plays, P next look, A auto level, S stop
-├── Notch, Pretend notch, Menu bar, Below the menu bar -> A whole dictation
-│   from that placement; variants flow-done, pulse-done, sweep-done,
-│   flow-cancel, pulse-cancel, sweep-cancel (keys 1–6)
-├── Processing -> Records, then holds processing 12 s
-├── Your voice -> Waits for your shortcut and meters your microphone
-│   └── Both: variants hud-lab, notch, pretend-notch, menu-bar, below
-└── Links name the story's slug and variant: hud-notch, pulse-cancel
-```
-
-The HUD is its own Rune overlay, not a view in the window, so a story drives
-the real HUD at the top of the screen and its stage only says what it shows. Playing a story
-puts its placement and look into the one tuning it shares with HUD Lab
-(`dot_scope::lab`).
+`dot-scope` is on ([hud_stories.rs](../../src/rune_ui/hud_stories.rs)):
+Whole flow, Recording with a canned voice or your own (hold the shortcut),
+Processing, Done, and Cancel, each with a variant per placement. The HUD is
+its own Rune overlay, not a view in the window, so a story drives the real HUD at the top
+of the screen and its stage only says what it shows. Stories and HUD Lab
+edit one tuning (`dot_scope::lab`).
 
 Hex meters no spectrum, so the prototype's band emphasis is the same for
 every component.

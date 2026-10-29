@@ -15,8 +15,6 @@ mod application_catalog;
 #[cfg_attr(any(target_os = "linux", target_os = "windows"), allow(dead_code))]
 mod audio;
 mod background_process;
-#[cfg(target_os = "macos")]
-mod browser_media;
 #[cfg_attr(any(target_os = "linux", target_os = "windows"), allow(dead_code))]
 mod calendar;
 #[cfg(hex_capture)]
@@ -222,11 +220,6 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 }
-
-// Debug builds count the heap so `/profile/vitals` can split the footprint.
-#[cfg(all(debug_assertions, target_os = "macos"))]
-#[global_allocator]
-static ALLOC: procwatch::alloc::Counting = procwatch::alloc::Counting::system();
 
 static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 pub(crate) const DEVELOPER_FEATURES_ENABLED: bool = cfg!(debug_assertions);

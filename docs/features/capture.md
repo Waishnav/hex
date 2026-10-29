@@ -9,7 +9,7 @@ mirror) and narration from Hex's microphone, takes Shift ink and clicks from
 Hex's event tap, transcribes the narration with word timestamps on Hex's
 loaded model, writes a Scrawl bundle into Scrawl's captures folder, copies it
 to the clipboard, and sends it to an OpenCode session with Scrawl's router
-(`crates/router`), run in Hex's process. Settings › Experiments › Scrawl turns
+(`crates/router`), run in Hex's process. Settings › Labs › Scrawl turns
 it on and holds its settings. Scrawl's capsule (switch chips, the on-screen
 picker, route chips) and its ink and laser overlay are Rune overlays.
 
@@ -21,7 +21,7 @@ Turn it on                               // capture.gate
 │   └── macOS bundles sign scrawl-helper beside `hex`; validate-app.sh requires it
 ├── Windows -> `capture` is not an experiment: absent from `hex experiments
 │   list`, `enable capture` is an unknown name; the crate is not compiled
-├── Experiment on -> Settings › Experiments › Scrawl appears
+├── Experiment on -> Settings › Labs › Scrawl appears
 └── Off -> no capture host, engine, sink, thread, or folder; `hex capture` -> feature-off
 
 On Linux                                 // capture.linux
@@ -54,7 +54,7 @@ On Linux                                 // capture.linux
     pointer, click, or ink input, no window log, `hex capture status`
     unsupported, choosing another folder only through settings.json
 
-Settings › Experiments › Scrawl          // capture.pane
+Settings › Labs › Scrawl          // capture.pane
 ├── Capture with Hex (capture.enabled, default off) -> off: no host, shortcut,
 │   input, retention, or folder, as with the experiment off
 │   └── On while the shortcut collides -> refused, the shortcut row says why

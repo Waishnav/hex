@@ -4,7 +4,8 @@ Experiments are unfinished features whose code sits on `dev` but stays
 dormant until someone turns one on for their own Hex. They are **unsupported**:
 an experiment may misbehave, change, or disappear without notice, and the
 window offers no switch for them. There is a flag, not a setting. Panes an
-experiment adds list under **Experiments** at the bottom of the sidebar.
+experiment adds list under **Labs** at the bottom of the sidebar, indented
+while Labs or one of them is open.
 
 ```ts
 Turn an experiment on                    // experiments.sources
@@ -37,7 +38,7 @@ The known experiments are compiled into
   ignored. The
   gate is where the work starts: the listener builds no capture host, so there
   is no sink, thread, or bundle folder while it is off. On, it adds
-  Settings › Experiments › Scrawl, whose own opt-in (`capture.enabled`,
+  Settings › Labs › Scrawl, whose own opt-in (`capture.enabled`,
   default off) is the second gate. Check:
   `capture_exists_only_where_it_has_a_host` in
   [experiments.rs](../../src/experiments.rs).

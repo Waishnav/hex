@@ -223,8 +223,6 @@ struct CallbackState {
     escape_down: bool,
     double_tap_enabled: bool,
     double_tap_only: bool,
-    /// Pass the dictation key on to other apps instead of consuming it.
-    share_trigger: bool,
     capture: CaptureState,
     dirty: bool,
 }
@@ -387,7 +385,6 @@ impl WindowsHotkeyMonitor {
         double_tap_enabled: bool,
         double_tap_only: bool,
         shortcut_mode: ShortcutMode,
-        share_trigger: bool,
     ) -> Result<Self> {
         binding.validate()?;
         let trigger_vk = binding.key.as_deref().map(virtual_key).transpose()?;
@@ -415,7 +412,6 @@ impl WindowsHotkeyMonitor {
             escape_down: false,
             double_tap_enabled,
             double_tap_only,
-            share_trigger,
             capture: CaptureState {
                 toggle: shortcut_mode == ShortcutMode::Toggle,
                 ..CaptureState::default()
@@ -605,13 +601,13 @@ unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARA
             } else if state.trigger_vk == Some(event.vkCode) {
                 if is_down {
                     if state.trigger_down {
-                        suppressed = !state.share_trigger;
+                        suppressed = true;
                     } else if !state.dirty
                         && !state.voice_capture.active
                         && state.modifiers.matches(&state.binding)
                     {
                         state.trigger_down = true;
-                        suppressed = !state.share_trigger;
+                        suppressed = true;
                         let was_locked = state.capture.locked;
                         if let Some(action) = state.capture.press(
                             state.double_tap_enabled,
@@ -626,7 +622,7 @@ unsafe extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARA
                     }
                 } else if state.trigger_down {
                     state.trigger_down = false;
-                    suppressed = !state.share_trigger;
+                    suppressed = true;
                     if let Some(action) =
                         state.capture.release(state.double_tap_enabled, event.time)
                     {
