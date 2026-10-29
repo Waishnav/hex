@@ -9,7 +9,6 @@
   vulkan-loader,
   spirv-headers,
   openblas,
-  glib,
   alsa-lib,
   alsa-plugins,
   pipewire,
@@ -21,7 +20,7 @@
   curl,
   wl-clipboard,
   wtype,
-  wrapGAppsHook3,
+  makeWrapper,
   autoAddDriverRunpath,
   symlinkJoin,
   libx11,
@@ -72,6 +71,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     fileset = lib.fileset.unions [
       ../Cargo.toml
       ../Cargo.lock
+      ../.cargo
       ../build.rs
       ../crates
       ../src
@@ -81,9 +81,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
       ../assets
       ../packaging
       ../macos/HexMicrophoneDriver/Info.plist
-      ../sdk/commands/package.json
-      ../sdk/commands/src
-      ../sdk/commands/workspace-template
     ];
   };
 
@@ -91,7 +88,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     lockFile = ../Cargo.lock;
     outputHashes = {
       "transcribe-rs-0.3.11" = "sha256-MJJiug3LfbKsuHcL2+LJk95+j5kk/MWzb5ihdBlHLmE=";
-      "rune-0.0.1" = "sha256-pbWI5nskIVkql7HW59tljGCRB45r6EBHjeOKvEe7HQE=";
+      "rune-0.0.1" = "sha256-IPJX8XwZiDuPjtuyHi6tMkVaJ+ouPXOKhwMURXlnfls=";
+      "transcribe-cpp-sys-0.4.1" = "sha256-lb6Q4e/hq8S84ZtFuPGpL+eEoneBVb2bVIr6yriVLaQ=";
     };
   };
 
@@ -100,7 +98,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     cmake
     python3
     shaderc
-    wrapGAppsHook3
+    makeWrapper
     autoAddDriverRunpath
   ];
   buildInputs = [
@@ -108,7 +106,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     vulkan-loader
     spirv-headers
     openblas
-    glib
     alsa-lib
     openssl
     libxkbcommon
@@ -135,18 +132,16 @@ rustPlatform.buildRustPackage (finalAttrs: {
   '';
 
   postInstall = ''
-    mv $out/bin/voice-control $out/bin/hex
     install -Dm644 ${../packaging/hex.desktop} $out/share/applications/hex.desktop
     substituteInPlace $out/share/applications/hex.desktop \
       --replace-fail '@HEX_BIN@' "$out/bin/hex"
   '';
 
-  preFixup = ''
-    gappsWrapperArgs+=(
-      --prefix PATH : ${lib.makeBinPath runtimePackages}
-      --prefix LD_LIBRARY_PATH : ${runtimeEnv.LD_LIBRARY_PATH}
+  postFixup = ''
+    wrapProgram $out/bin/hex \
+      --prefix PATH : ${lib.makeBinPath runtimePackages} \
+      --prefix LD_LIBRARY_PATH : ${runtimeEnv.LD_LIBRARY_PATH} \
       --set ALSA_PLUGIN_DIR ${runtimeEnv.ALSA_PLUGIN_DIR}
-    )
   '';
 
   passthru.devShell = mkShell {
