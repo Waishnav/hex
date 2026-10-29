@@ -23,6 +23,7 @@ pub struct LocalTranscriber {
     max_audio_samples: Option<usize>,
     stream: Option<transcribe_cpp::StreamOptions>,
     /// The finest timestamps the model gives, for a capture's word times.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     finest_timestamps: TimestampKind,
 }
 
