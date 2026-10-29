@@ -1384,7 +1384,7 @@ mod tests {
         // A grant still waiting (or a saved step alone) is not trusted.
         for status in [
             SetupStatus {
-                input_monitoring: PermissionState::NeedsRestart,
+                accessibility: PermissionState::NeedsRestart,
                 ..ready_status()
             },
             SetupStatus {
