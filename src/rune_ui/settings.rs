@@ -783,15 +783,20 @@ pub(super) fn shortcut_control(ui: &Ui, p: Paint, target: ShortcutTarget) -> El 
     control
 }
 
-/// Without a shortcuts portal the desktop's keybindings own every shortcut:
-/// the commands to bind there.
+/// Desktop-owned keybindings: the commands to bind there.
 fn desktop_commands(ui: &Ui, p: Paint) -> El {
     let mut rows = vec![
         note(
             "no-portal",
-            tr(
-                "Your desktop has no shortcuts portal. Bind these commands in its keyboard settings.",
-            ),
+            if ui.shortcuts() == Some(&DesktopShortcuts::Hyprland) {
+                tr(
+                    "Hyprland owns your shortcut keys. Bind these commands in your Hyprland configuration; recording a shortcut in Hex cannot assign it.",
+                )
+            } else {
+                tr(
+                    "Your desktop has no shortcuts portal. Bind these commands in its keyboard settings.",
+                )
+            },
             p.muted(),
         ),
         command_row(

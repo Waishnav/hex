@@ -41,6 +41,13 @@ bindings from X11 appear ungranted on Wayland; they do not prevent keyboard
 shortcuts from registering. Hex does not use raw input devices or XWayland to
 bypass the compositor. See the [XDG shortcut specification](https://specifications.freedesktop.org/shortcuts/latest/).
 
+On Hyprland, Settings shows the desktop keybinding commands and omits the
+shortcut recorders: its portal registers actions but ignores preferred keys and
+returns empty trigger descriptions, even on success. Other portal desktops keep
+their per-shortcut granted/refused feedback. The `hyprland` scene and
+`hyprland_shows_desktop_bindings_instead_of_a_false_shortcut_conflict` cover this
+presentation; they do not prove physical key delivery or compositor bindings.
+
 Checks: `mouse_buttons_record_with_or_without_modifiers`,
 `mouse_bindings_persist_and_conflict_only_with_the_same_trigger`,
 `mouse_hold_and_release_use_the_dictation_state_machine`,

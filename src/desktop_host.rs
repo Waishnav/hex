@@ -47,6 +47,8 @@ pub(crate) enum DesktopShortcuts {
     Registered,
     /// The desktop's shortcuts portal bound these, in request order.
     Portal(Vec<DesktopGrantedShortcut>),
+    /// Hyprland registers portal actions; its configuration owns their keys.
+    Hyprland,
     /// Nothing registers shortcuts: the desktop's keybindings run `hex` commands.
     Commands,
 }

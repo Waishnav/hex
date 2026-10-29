@@ -266,7 +266,9 @@ dictation rules:
   focused application.
 - **Hyprland** has the portal but takes every shortcut without a key, so
   nothing happens until you bind one in your config, and the key Settings
-  records is not used. Hex can't tell whether your config binds it. Prefer
+  records is not used. Settings shows commands to bind in your Hyprland
+  configuration instead of a shortcut recorder or a false conflict warning.
+  Hex can't tell whether your config binds it. Prefer
   keys without modifiers, because Hyprland adds every modifier you still hold
   to Hex's paste (see [Native Wayland Requirements](#native-wayland-requirements)). For example:
 

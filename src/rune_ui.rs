@@ -944,10 +944,12 @@ impl Ui {
         self.view.as_ref().map(|view| &view.listener.shortcuts)
     }
 
-    /// Without a shortcuts portal the desktop's keybindings own every
-    /// shortcut, so the window has none to record.
+    /// Desktop-owned keybindings cannot be changed by recording keys here.
     fn records_shortcuts(&self) -> bool {
-        self.shortcuts() != Some(&DesktopShortcuts::Commands)
+        !matches!(
+            self.shortcuts(),
+            Some(DesktopShortcuts::Commands | DesktopShortcuts::Hyprland)
+        )
     }
 
     /// Adopts settings the host saved, unless they are the stale copy of an
@@ -1708,6 +1710,7 @@ const SCENES: &[Scene] = &[
         }
     }),
     ("commands", |ui| *ui = fixture(DesktopShortcuts::Commands)),
+    ("hyprland", |ui| *ui = fixture(DesktopShortcuts::Hyprland)),
     ("disabled", |ui| {
         *ui = portal_fixture();
         if let Some(view) = &mut ui.view {

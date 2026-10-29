@@ -1049,16 +1049,28 @@ impl Backend {
                 })
             })
         };
+        let hyprland = portal.hyprland();
+        let snapshot = |granted: &std::collections::HashMap<String, Option<String>>| {
+            if hyprland {
+                DesktopShortcuts::Hyprland
+            } else {
+                DesktopShortcuts::Portal(project(granted))
+            }
+        };
         let mut with_modifiers = modifiers(&granted);
-        let granted = project(&granted);
-        for shortcut in granted.iter().filter(|shortcut| shortcut.trigger.is_none()) {
-            tracing::warn!(name = %shortcut.name, "the desktop did not grant a Hex shortcut");
+        if !hyprland {
+            for shortcut in project(&granted)
+                .iter()
+                .filter(|shortcut| shortcut.trigger.is_none())
+            {
+                tracing::warn!(name = %shortcut.name, "the desktop did not grant a Hex shortcut");
+            }
         }
         self.status
             .configurable
             .store(portal.configurable(), Ordering::Release);
         self.status.configure.store(false, Ordering::Release);
-        self.mark_ready(DesktopShortcuts::Portal(granted));
+        self.mark_ready(snapshot(&granted));
         // Escape while the recording shortcut is still held carries its modifiers.
         let held_escape = |shortcut: Shortcut| -> Option<String> {
             let key = match shortcut {
@@ -1103,8 +1115,7 @@ impl Backend {
                     },
                     crate::linux_portal::Event::Changed(changed) => {
                         with_modifiers = modifiers(&changed);
-                        self.status
-                            .set_shortcuts(DesktopShortcuts::Portal(project(&changed)));
+                        self.status.set_shortcuts(snapshot(&changed));
                         continue;
                     }
                     crate::linux_portal::Event::Closed => {

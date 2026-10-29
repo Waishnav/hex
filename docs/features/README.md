@@ -1043,7 +1043,9 @@ Linux beta                               // not macOS feature parity
 ├── Recording sounds -> Shortcut press / capture stop / active cancellation
 ├── Shortcuts -> One state machine, three sources        // linux.shortcuts
 │   ├── X11 -> Root-window key grabs; General records the chord
-│   ├── Wayland + GlobalShortcuts portal -> Desktop grants the triggers
+│   ├── Hyprland + portal v1 -> Portal registers actions, configuration owns keys
+│   │   └── General lists keybinding commands; no recorder or false refusal warning
+│   ├── Other Wayland + GlobalShortcuts portal -> Desktop grants the triggers
 │   │   ├── General > Change shortcut -> Press chord (Esc cancels)
 │   │   │   └── Saved -> New portal session asks for it as preferred_trigger
 │   │   │       // observed on the niri fork: a new session gets it, a rebind in the same one fails

@@ -94,6 +94,31 @@ fn portal_desktops_show_what_they_granted_beside_each_recorder() {
 }
 
 #[test]
+fn hyprland_shows_desktop_bindings_instead_of_a_false_shortcut_conflict() {
+    let rt = runtime("hyprland", true, GOLDEN_SIZE);
+    let shown = texts(&rt);
+    assert!(
+        shown
+            .iter()
+            .any(|text| text.starts_with("Hyprland owns your shortcut keys."))
+    );
+    for command in [
+        "hex dictation start",
+        "hex dictation stop",
+        "hex dictation toggle",
+        "hex paste-last",
+    ] {
+        assert!(shown.iter().any(|text| text == command));
+    }
+    assert!(!shown.iter().any(|text| text.contains("did not grant")
+        || text.contains("kept a shortcut")
+        || text.contains("no shortcuts portal")));
+    assert!(rt.find("dictation-hotkey").is_none());
+    assert!(rt.find("paste-last-hotkey").is_none());
+    assert!(!shown.iter().any(|text| text.contains("F12")));
+}
+
+#[test]
 fn a_mouse_shortcut_on_wayland_explains_the_desktop_command_route() {
     let rt = runtime("portal-mouse", true, GOLDEN_SIZE);
     let shown = texts(&rt);
@@ -1601,6 +1626,7 @@ fn goldens() {
     let _goldens = Goldens::collect();
     for dark in [true, false] {
         check_golden("portal", dark, GOLDEN_SIZE);
+        check_golden("hyprland", dark, GOLDEN_SIZE);
         for scene in [
             "voice-action",
             "history",

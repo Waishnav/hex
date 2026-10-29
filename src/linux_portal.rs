@@ -438,6 +438,12 @@ fn exec_argument(argument: &str) -> String {
     quoted
 }
 
+fn is_hyprland_desktop(desktop: &str) -> bool {
+    desktop
+        .split(':')
+        .any(|name| name.eq_ignore_ascii_case("Hyprland"))
+}
+
 /// The GlobalShortcuts client.
 pub(crate) struct Portal {
     bus: PortalBus,
@@ -453,6 +459,13 @@ impl Portal {
             session: None,
             escape: None,
         }))
+    }
+
+    /// Hyprland ignores preferred triggers and always returns empty descriptions.
+    /// Its portal still delivers actions bound in the compositor configuration.
+    pub(crate) fn hyprland(&self) -> bool {
+        !self.configurable()
+            && is_hyprland_desktop(&std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default())
     }
 
     /// Whether the desktop can show its dialog for Hex's shortcuts
@@ -618,6 +631,15 @@ mod tests {
             r#""/tmp/my \\$dir/100%%/a\\"b\\\\c""#
         );
         assert!(desktop_entry("/opt/hex").contains("\nExec=\"/opt/hex\"\n"));
+    }
+
+    #[test]
+    fn hyprland_desktop_matches_xdg_desktop_names() {
+        assert!(is_hyprland_desktop("Hyprland"));
+        assert!(is_hyprland_desktop("Omarchy:hyprland"));
+        assert!(!is_hyprland_desktop("GNOME"));
+        assert!(!is_hyprland_desktop("NotHyprland"));
+        assert!(!is_hyprland_desktop(""));
     }
 
     #[test]
