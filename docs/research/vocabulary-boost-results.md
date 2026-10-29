@@ -14,8 +14,8 @@ weren't said?
 clips (was 4), and **13 of 19** when streaming (was 6). Across every listed term,
 recall goes from 136 to 146 of 157. Word error rate is no worse in any group.
 Clips that contain no term are unchanged, and every new term the boost wrote
-was right. The cost is time: rescoring adds about 0.1–0.25 s to a 10 s clip's
-finish, measured on a fully loaded machine.
+was right. The cost is time: rescoring adds about 0.05–0.15 s (median) to a clip's
+finish when the clip has a candidate, and nothing when it doesn't.
 
 ## How it works
 
@@ -125,19 +125,20 @@ literal word "Avatar" became Abattoir once. That is why Normal is the default.
 
 ### Latency
 
-The MacBook Pro was running six other build jobs throughout, so the absolute
-numbers are high. The differences are what matter.
+Measured at the final fork commit on the MacBook Pro while it ran other build
+jobs, so absolute numbers are noisy; the differences are what matter.
 
 | Per 10 s of audio | Off | Normal |
 |---|---|---|
-| rve offline, median / p90 | 515 / 971 ms | 746 / 1434 ms |
-| rve streaming finish, median / p90 | 125 / 211 ms | 245 / 451 ms |
-| tc streaming finish, median / p90 | 155 / 257 ms | 179 / 330 ms |
+| rve offline, median / p90 | 363 / 670 ms | 356 / 698 ms |
+| tc offline, median / p90 | 695 / 957 ms | 763 / 1111 ms |
+| rve streaming finish, median / p90 | 175 / 298 ms | 215 / 439 ms |
 
-Rescoring is about a quarter of offline inference on clips with candidates, and
-about half of the streaming finish. It costs about 0.6–1.2 ms per transducer
-column. With this 17-term list, 146 of 168 rve clips had at least one
-candidate; a clip with none pays nothing.
+With this 17-term list, 81 of 168 rve clips had at least one candidate to
+rescore. A clip with none pays nothing. Where there are candidates, rescoring
+takes a median of 62 ms offline and 122 ms at a stream's finish, and at most
+0.55 s. An earlier, looser candidate finder scored 146 clips for the same
+results and cost about twice as much.
 
 ## Settings
 
